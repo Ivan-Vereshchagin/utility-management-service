@@ -13,3 +13,4 @@ class Settings(BaseSettings):
 
     app_name: str = "Utility Management API"
     docs_enabled: bool = True
+    database_url: str | None = None
