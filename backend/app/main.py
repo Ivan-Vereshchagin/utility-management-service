@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.auth import router as auth_router
 from app.config import Settings
 from app.database import get_engine
 
@@ -18,6 +19,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.docs_enabled else None,
     openapi_url="/openapi.json" if settings.docs_enabled else None,
 )
+app.include_router(auth_router)
 
 
 @app.get("/health", tags=["health"])
