@@ -145,12 +145,7 @@ def set_refresh_cookie(response: Response, token: str, expires_at: datetime) -> 
     response.headers["Cache-Control"] = "no-store"
 
 
-def invalid_refresh_response() -> JSONResponse:
-    response = JSONResponse(
-        status_code=401,
-        content={"detail": "Refresh-токен недействителен. Войдите снова"},
-        headers={"Cache-Control": "no-store"},
-    )
+def clear_refresh_cookie(response: Response) -> None:
     response.delete_cookie(
         key=REFRESH_COOKIE_NAME,
         path=REFRESH_COOKIE_PATH,
@@ -158,6 +153,16 @@ def invalid_refresh_response() -> JSONResponse:
         httponly=True,
         samesite="lax",
     )
+    response.headers["Cache-Control"] = "no-store"
+
+
+def invalid_refresh_response() -> JSONResponse:
+    response = JSONResponse(
+        status_code=401,
+        content={"detail": "Refresh-токен недействителен. Войдите снова"},
+        headers={"Cache-Control": "no-store"},
+    )
+    clear_refresh_cookie(response)
     return response
 
 
@@ -251,6 +256,47 @@ def refresh(request: Request, response: Response) -> AccessTokenResponse | JSONR
 
     set_refresh_cookie(response, refresh_token, expires_at)
     return AccessTokenResponse(access_token=access_token)
+
+
+@router.post(
+    "/logout", status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_same_origin)],
+)
+def logout(request: Request, response: Response) -> None:
+    """Отзывает цепочку текущего входа и удаляет refresh-cookie."""
+    token = request.cookies.get(REFRESH_COOKIE_NAME)
+    if token:
+        engine = get_engine()
+        if engine is None:
+            raise HTTPException(status_code=503, detail="База данных не настроена")
+
+        token_hash = sha256(token.encode()).hexdigest()
+        try:
+            with Session(engine) as session:
+                stored_token = session.scalar(
+                    select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+                )
+                if stored_token is not None:
+                    # Та же блокировка не даёт обновить токен одновременно с выходом.
+                    user = session.scalar(
+                        select(User)
+                        .where(User.id == stored_token.user_id)
+                        .with_for_update()
+                    )
+                    if user is not None:
+                        session.execute(
+                            update(RefreshToken)
+                            .where(
+                                RefreshToken.family_id == stored_token.family_id,
+                                RefreshToken.revoked_at.is_(None),
+                            )
+                            .values(revoked_at=datetime.now(timezone.utc))
+                        )
+                        session.commit()
+        except SQLAlchemyError as exc:
+            raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+    clear_refresh_cookie(response)
 
 
 @router.get("/me", response_model=RegisterResponse)
