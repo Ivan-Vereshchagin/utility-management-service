@@ -15,3 +15,4 @@ class Settings(BaseSettings):
     docs_enabled: bool = True
     database_url: str | None = None
     jwt_secret: str | None = None
+    refresh_cookie_secure: bool = False
