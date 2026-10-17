@@ -34,6 +34,16 @@ class InvitationIssued(BaseModel):
     expires_at: datetime
 
 
+class InvitationSummary(BaseModel):
+    id: int
+    role: Literal["reader", "editor"]
+    created_at: datetime
+    expires_at: datetime
+    accepted_at: datetime | None
+    revoked_at: datetime | None
+    status: Literal["active", "expired", "accepted", "revoked"]
+
+
 class InvitationRedeem(BaseModel):
     code: str
 
@@ -46,6 +56,27 @@ class InvitationRedeem(BaseModel):
         if re.fullmatch(r"[0-9A-F]{24}", normalized) is None:
             raise ValueError("Код должен содержать 24 шестнадцатеричных символа")
         return normalized
+
+
+def to_summary(invitation: PropertyInvitation, now: datetime) -> InvitationSummary:
+    if invitation.accepted_at is not None:
+        current_status = "accepted"
+    elif invitation.revoked_at is not None:
+        current_status = "revoked"
+    elif invitation.expires_at <= now:
+        current_status = "expired"
+    else:
+        current_status = "active"
+
+    return InvitationSummary(
+        id=invitation.id,
+        role=invitation.role,
+        created_at=invitation.created_at,
+        expires_at=invitation.expires_at,
+        accepted_at=invitation.accepted_at,
+        revoked_at=invitation.revoked_at,
+        status=current_status,
+    )
 
 
 @router.post(
@@ -97,6 +128,39 @@ def create_invitation(
             session.commit()
             response.headers["Cache-Control"] = "no-store"
             return issued
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.get("/{property_id}/invitations", response_model=list[InvitationSummary])
+def list_invitations(
+    response: Response,
+    property_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> list[InvitationSummary]:
+    """Показывает владельцу приглашения без раскрытия кодов и их хешей."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            owned_property = session.scalar(
+                select(Property.id).where(
+                    Property.id == property_id, Property.owner_id == current_user.id
+                )
+            )
+            if owned_property is None:
+                raise HTTPException(status_code=404, detail="Объект не найден")
+
+            invitations = session.scalars(
+                select(PropertyInvitation)
+                .where(PropertyInvitation.property_id == property_id)
+                .order_by(PropertyInvitation.created_at.desc(), PropertyInvitation.id.desc())
+            ).all()
+            now = datetime.now(timezone.utc)
+            response.headers["Cache-Control"] = "no-store"
+            return [to_summary(invitation, now) for invitation in invitations]
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
