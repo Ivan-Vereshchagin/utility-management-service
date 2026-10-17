@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.auth import router as auth_router
 from app.config import Settings
 from app.database import get_engine
-from app.invitations import router as invitations_router
+from app.invitations import redeem_router, router as invitations_router
 from app.properties import router as properties_router
 
 settings = Settings()
@@ -24,6 +24,7 @@ app = FastAPI(
 app.include_router(auth_router)
 app.include_router(properties_router)
 app.include_router(invitations_router)
+app.include_router(redeem_router)
 
 
 @app.get("/health", tags=["health"])
