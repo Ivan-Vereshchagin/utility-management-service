@@ -1,14 +1,15 @@
 from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.auth import RegisterResponse, get_current_user
 from app.database import get_engine
-from app.models import Property
+from app.models import Property, PropertyAccess
 
 
 router = APIRouter(prefix="/properties", tags=["properties"])
@@ -49,15 +50,17 @@ class PropertyResponse(BaseModel):
     address: str
     name: str | None
     created_at: datetime
+    role: Literal["owner", "editor", "reader"]
 
 
-def to_response(item: Property) -> PropertyResponse:
+def to_response(item: Property, role: str) -> PropertyResponse:
     return PropertyResponse(
         id=item.id,
         owner_id=item.owner_id,
         address=item.address,
         name=item.name,
         created_at=item.created_at,
+        role=role,
     )
 
 
@@ -80,7 +83,7 @@ def create_property(
             session.add(item)
             session.commit()
             session.refresh(item)
-            return to_response(item)
+            return to_response(item, "owner")
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
@@ -90,21 +93,36 @@ def get_property(
     property_id: int = Path(gt=0),
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> PropertyResponse:
-    """Возвращает объект, если текущий пользователь — его владелец."""
+    """Возвращает объект владельцу или приглашённому участнику."""
     engine = get_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="База данных не настроена")
 
     try:
         with Session(engine) as session:
-            item = session.scalar(
-                select(Property).where(
-                    Property.id == property_id, Property.owner_id == current_user.id
+            row = session.execute(
+                select(Property, PropertyAccess.role)
+                .outerjoin(
+                    PropertyAccess,
+                    and_(
+                        PropertyAccess.property_id == Property.id,
+                        PropertyAccess.user_id == current_user.id,
+                    ),
                 )
-            )
-            if item is None:
+                .where(
+                    Property.id == property_id,
+                    or_(
+                        Property.owner_id == current_user.id,
+                        PropertyAccess.user_id == current_user.id,
+                    ),
+                )
+            ).one_or_none()
+            if row is None:
                 raise HTTPException(status_code=404, detail="Объект не найден")
-            return to_response(item)
+            item, member_role = row
+            return to_response(
+                item, "owner" if item.owner_id == current_user.id else member_role
+            )
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
@@ -136,7 +154,7 @@ def update_property(
                 setattr(item, field, value)
             session.commit()
             session.refresh(item)
-            return to_response(item)
+            return to_response(item, "owner")
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
@@ -145,18 +163,35 @@ def update_property(
 def list_properties(
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> list[PropertyResponse]:
-    """Возвращает только объекты, которыми владеет текущий пользователь."""
+    """Возвращает собственные и доступные по приглашению объекты."""
     engine = get_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="База данных не настроена")
 
     try:
         with Session(engine) as session:
-            items = session.scalars(
-                select(Property)
-                .where(Property.owner_id == current_user.id)
+            rows = session.execute(
+                select(Property, PropertyAccess.role)
+                .outerjoin(
+                    PropertyAccess,
+                    and_(
+                        PropertyAccess.property_id == Property.id,
+                        PropertyAccess.user_id == current_user.id,
+                    ),
+                )
+                .where(
+                    or_(
+                        Property.owner_id == current_user.id,
+                        PropertyAccess.user_id == current_user.id,
+                    )
+                )
                 .order_by(Property.id)
             ).all()
-            return [to_response(item) for item in items]
+            return [
+                to_response(
+                    item, "owner" if item.owner_id == current_user.id else member_role
+                )
+                for item, member_role in rows
+            ]
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
