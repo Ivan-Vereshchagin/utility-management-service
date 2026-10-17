@@ -101,6 +101,43 @@ def create_invitation(
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
 
+@router.delete(
+    "/{property_id}/invitations/{invitation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def revoke_invitation(
+    property_id: int = Path(gt=0),
+    invitation_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> None:
+    """Отзывает неиспользованное приглашение владельца объекта."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            invitation = session.scalar(
+                select(PropertyInvitation)
+                .join(Property, Property.id == PropertyInvitation.property_id)
+                .where(
+                    PropertyInvitation.id == invitation_id,
+                    PropertyInvitation.property_id == property_id,
+                    Property.owner_id == current_user.id,
+                )
+                .with_for_update(of=PropertyInvitation)
+            )
+            if invitation is None:
+                raise HTTPException(status_code=404, detail="Приглашение не найдено")
+            if invitation.accepted_at is not None:
+                raise HTTPException(status_code=409, detail="Приглашение уже использовано")
+            if invitation.revoked_at is None:
+                invitation.revoked_at = datetime.now(timezone.utc)
+                session.commit()
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
 @redeem_router.post(
     "/redeem", response_model=PropertyResponse, status_code=status.HTTP_201_CREATED
 )
