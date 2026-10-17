@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
+from fastapi import APIRouter, Depends, HTTPException, Path, status
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -29,6 +29,18 @@ class PropertyCreate(BaseModel):
     @classmethod
     def empty_name_is_missing(cls, value: str | None) -> str | None:
         return value or None
+
+
+class PropertyUpdate(PropertyCreate):
+    address: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def validate_changes(self) -> "PropertyUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Укажите хотя бы одно поле для изменения")
+        if "address" in self.model_fields_set and self.address is None:
+            raise ValueError("Адрес не может быть пустым")
+        return self
 
 
 class PropertyResponse(BaseModel):
@@ -66,6 +78,62 @@ def create_property(
                 name=payload.name,
             )
             session.add(item)
+            session.commit()
+            session.refresh(item)
+            return to_response(item)
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.get("/{property_id}", response_model=PropertyResponse)
+def get_property(
+    property_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> PropertyResponse:
+    """Возвращает объект, если текущий пользователь — его владелец."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            item = session.scalar(
+                select(Property).where(
+                    Property.id == property_id, Property.owner_id == current_user.id
+                )
+            )
+            if item is None:
+                raise HTTPException(status_code=404, detail="Объект не найден")
+            return to_response(item)
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.patch("/{property_id}", response_model=PropertyResponse)
+def update_property(
+    payload: PropertyUpdate,
+    property_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> PropertyResponse:
+    """Меняет адрес или название собственного объекта."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            item = session.scalar(
+                select(Property)
+                .where(
+                    Property.id == property_id, Property.owner_id == current_user.id
+                )
+                .with_for_update()
+            )
+            if item is None:
+                raise HTTPException(status_code=404, detail="Объект не найден")
+
+            for field, value in payload.model_dump(exclude_unset=True).items():
+                setattr(item, field, value)
             session.commit()
             session.refresh(item)
             return to_response(item)
