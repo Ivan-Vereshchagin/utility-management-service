@@ -159,6 +159,37 @@ def update_property(
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
 
+@router.delete("/{property_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_property_member(
+    property_id: int = Path(gt=0),
+    user_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> None:
+    """Удаляет доступ участника по запросу владельца объекта."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            access = session.scalar(
+                select(PropertyAccess)
+                .join(Property, Property.id == PropertyAccess.property_id)
+                .where(
+                    PropertyAccess.property_id == property_id,
+                    PropertyAccess.user_id == user_id,
+                    Property.owner_id == current_user.id,
+                )
+                .with_for_update(of=PropertyAccess)
+            )
+            if access is None:
+                raise HTTPException(status_code=404, detail="Участник не найден")
+            session.delete(access)
+            session.commit()
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
 @router.get("", response_model=list[PropertyResponse])
 def list_properties(
     current_user: RegisterResponse = Depends(get_current_user),
