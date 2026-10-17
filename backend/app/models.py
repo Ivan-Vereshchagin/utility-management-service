@@ -85,3 +85,32 @@ class PropertyAccess(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class PropertyInvitation(Base):
+    __tablename__ = "property_invitations"
+    __table_args__ = (
+        UniqueConstraint("code_hash", name="uq_property_invitations_code_hash"),
+        CheckConstraint(
+            "role IN ('reader', 'editor')", name="ck_property_invitations_role"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    property_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
+    created_by_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE")
+    )
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    accepted_by_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
