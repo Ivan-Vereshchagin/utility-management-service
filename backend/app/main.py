@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.auth import router as auth_router
 from app.config import Settings
 from app.database import get_engine
+from app.properties import router as properties_router
 
 settings = Settings()
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.docs_enabled else None,
 )
 app.include_router(auth_router)
+app.include_router(properties_router)
 
 
 @app.get("/health", tags=["health"])

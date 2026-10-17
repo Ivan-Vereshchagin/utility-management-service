@@ -299,11 +299,10 @@ def logout(request: Request, response: Response) -> None:
     clear_refresh_cookie(response)
 
 
-@router.get("/me", response_model=RegisterResponse)
-def get_me(
+def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> RegisterResponse:
-    """Возвращает пользователя по действующему access-токену."""
+    """Проверяет access-токен и возвращает текущего пользователя."""
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise unauthorized()
 
@@ -339,3 +338,9 @@ def get_me(
             )
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.get("/me", response_model=RegisterResponse)
+def get_me(current_user: RegisterResponse = Depends(get_current_user)) -> RegisterResponse:
+    """Возвращает пользователя по действующему access-токену."""
+    return current_user
