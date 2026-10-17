@@ -1,12 +1,17 @@
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from secrets import token_urlsafe
+from urllib.parse import parse_qs
 from uuid import UUID, uuid4
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+    OAuth2PasswordBearer,
+)
 from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field
 from pwdlib import PasswordHash
@@ -22,6 +27,7 @@ from app.models import RefreshToken, User
 router = APIRouter(prefix="/auth", tags=["auth"])
 password_hash = PasswordHash.recommended()
 bearer_scheme = HTTPBearer(auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)
 TOKEN_AUDIENCE = "utility-management-api"
 REFRESH_COOKIE_NAME = "ums_refresh_token"
 REFRESH_COOKIE_PATH = "/auth"
@@ -171,6 +177,35 @@ def invalid_refresh_response() -> JSONResponse:
 )
 def login(payload: LoginRequest, response: Response) -> AccessTokenResponse:
     """Проверяет пароль и выдаёт access-токен и cookie с refresh-токеном."""
+    return issue_tokens(str(payload.email), payload.password, response)
+
+
+@router.post(
+    "/token",
+    response_model=AccessTokenResponse,
+    dependencies=[Depends(require_same_origin)],
+    include_in_schema=False,
+)
+async def login_for_docs(
+    request: Request, response: Response
+) -> AccessTokenResponse:
+    """Принимает email и пароль в формате, необходимом Swagger Authorize."""
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].lower()
+    if content_type != "application/x-www-form-urlencoded":
+        raise HTTPException(status_code=415, detail="Ожидается форма входа")
+    try:
+        fields = parse_qs((await request.body()).decode("utf-8"), keep_blank_values=True)
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=422, detail="Некорректная кодировка формы") from exc
+    usernames = fields.get("username", [])
+    passwords = fields.get("password", [])
+    if len(usernames) != 1 or len(passwords) != 1 or not usernames[0]:
+        raise HTTPException(status_code=422, detail="Укажите email и пароль")
+    return issue_tokens(usernames[0], passwords[0], response)
+
+
+def issue_tokens(email: str, password: str, response: Response) -> AccessTokenResponse:
+    """Создаёт пару токенов после проверки учётных данных."""
     secret = get_jwt_secret()
     engine = get_engine()
     if engine is None:
@@ -179,9 +214,9 @@ def login(payload: LoginRequest, response: Response) -> AccessTokenResponse:
     try:
         with Session(engine) as session:
             user = session.scalar(
-                select(User).where(User.email == str(payload.email).lower())
+                select(User).where(User.email == email.lower())
             )
-            if user is None or not password_hash.verify(payload.password, user.password_hash):
+            if user is None or not password_hash.verify(password, user.password_hash):
                 raise unauthorized()
             user_id = user.id
             expires_at = datetime.now(timezone.utc) + REFRESH_TOKEN_LIFETIME
@@ -301,6 +336,7 @@ def logout(request: Request, response: Response) -> None:
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    _oauth2_token: str | None = Depends(oauth2_scheme),
 ) -> RegisterResponse:
     """Проверяет access-токен и возвращает текущего пользователя."""
     if credentials is None or credentials.scheme.lower() != "bearer":
