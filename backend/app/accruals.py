@@ -249,6 +249,35 @@ def update_accrual(
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
 
+@router.delete(
+    "/{property_id}/accruals/{accrual_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_accrual(
+    property_id: int = Path(gt=0),
+    accrual_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> None:
+    """Удаляет ошибочное начисление вместе с его строками услуг."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            require_property_write_access(session, property_id, current_user.id)
+            item = session.scalar(
+                select(Accrual)
+                .where(Accrual.id == accrual_id, Accrual.property_id == property_id)
+                .with_for_update()
+            )
+            if item is None:
+                raise HTTPException(status_code=404, detail="Начисление не найдено")
+            session.delete(item)
+            session.commit()
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
 @router.get("/{property_id}/accruals", response_model=list[AccrualResponse])
 def list_accruals(
     property_id: int = Path(gt=0),
