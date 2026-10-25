@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.accruals import router as accruals_router
 from app.auth import router as auth_router
 from app.config import Settings
 from app.database import get_engine
@@ -27,6 +28,7 @@ app.include_router(properties_router)
 app.include_router(invitations_router)
 app.include_router(redeem_router)
 app.include_router(service_types_router)
+app.include_router(accruals_router)
 
 
 @app.get("/health", tags=["health"])
