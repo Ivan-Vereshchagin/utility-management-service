@@ -1,13 +1,17 @@
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Identity,
+    Index,
     MetaData,
+    Numeric,
     String,
     UniqueConstraint,
     Uuid,
@@ -114,3 +118,51 @@ class PropertyInvitation(Base):
         BigInteger, ForeignKey("users.id", ondelete="SET NULL")
     )
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ServiceType(Base):
+    __tablename__ = "service_types"
+
+    code: Mapped[str] = mapped_column(String(40), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+
+
+class Accrual(Base):
+    __tablename__ = "accruals"
+    __table_args__ = (
+        CheckConstraint("period_start <= period_end", name="ck_accruals_period"),
+        CheckConstraint("total_amount >= 0", name="ck_accruals_total_amount"),
+        Index("ix_accruals_property_period", "property_id", "period_start", "period_end"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    property_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("properties.id", ondelete="CASCADE"), nullable=False
+    )
+    created_by_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    period_start: Mapped[date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    notes: Mapped[str | None] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AccrualLine(Base):
+    __tablename__ = "accrual_lines"
+    __table_args__ = (
+        CheckConstraint("amount >= 0", name="ck_accrual_lines_amount"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    accrual_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("accruals.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    service_type_code: Mapped[str] = mapped_column(
+        String(40), ForeignKey("service_types.code"), index=True, nullable=False
+    )
+    description: Mapped[str | None] = mapped_column(String(255))
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)

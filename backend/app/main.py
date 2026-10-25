@@ -10,6 +10,7 @@ from app.config import Settings
 from app.database import get_engine
 from app.invitations import redeem_router, router as invitations_router
 from app.properties import router as properties_router
+from app.service_types import router as service_types_router
 
 settings = Settings()
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ app.include_router(auth_router)
 app.include_router(properties_router)
 app.include_router(invitations_router)
 app.include_router(redeem_router)
+app.include_router(service_types_router)
 
 
 @app.get("/health", tags=["health"])
