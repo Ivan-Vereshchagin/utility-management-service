@@ -62,7 +62,7 @@ class AccrualLineResponse(BaseModel):
 class AccrualResponse(BaseModel):
     id: int
     property_id: int
-    created_by_id: int
+    created_by_id: int | None
     period_start: date
     period_end: date
     total_amount: str
@@ -70,6 +70,49 @@ class AccrualResponse(BaseModel):
     notes: str | None
     created_at: datetime
     lines: list[AccrualLineResponse]
+
+
+def require_property_read_access(session: Session, property_id: int, user_id: int) -> None:
+    """Проверяет, что пользователь владеет объектом или состоит в нём."""
+    owner_id = session.scalar(select(Property.owner_id).where(Property.id == property_id))
+    if owner_id is None:
+        raise HTTPException(status_code=404, detail="Объект не найден")
+    if owner_id != user_id:
+        access = session.scalar(
+            select(PropertyAccess.user_id).where(
+                PropertyAccess.property_id == property_id,
+                PropertyAccess.user_id == user_id,
+            )
+        )
+        if access is None:
+            raise HTTPException(status_code=404, detail="Объект не найден")
+
+
+def to_accrual_response(item: Accrual, lines: list[AccrualLine]) -> AccrualResponse:
+    """Собирает ответ и вычисляет часть суммы без разбивки по услугам."""
+    unallocated = item.total_amount - sum(
+        (line.amount for line in lines), Decimal("0")
+    )
+    return AccrualResponse(
+        id=item.id,
+        property_id=item.property_id,
+        created_by_id=item.created_by_id,
+        period_start=item.period_start,
+        period_end=item.period_end,
+        total_amount=f"{item.total_amount:.2f}",
+        unallocated_amount=f"{unallocated:.2f}",
+        notes=item.notes,
+        created_at=item.created_at,
+        lines=[
+            AccrualLineResponse(
+                id=line.id,
+                service_type_code=line.service_type_code,
+                description=line.description,
+                amount=f"{line.amount:.2f}",
+            )
+            for line in lines
+        ],
+    )
 
 
 @router.post(
@@ -143,30 +186,77 @@ def create_accrual(
             session.flush()
             session.refresh(accrual)
 
-            unallocated = Decimal(payload.total_amount) - sum(
-                (Decimal(line.amount) for line in payload.lines), Decimal("0")
-            )
-            created = AccrualResponse(
-                id=accrual.id,
-                property_id=property_id,
-                created_by_id=current_user.id,
-                period_start=accrual.period_start,
-                period_end=accrual.period_end,
-                total_amount=f"{accrual.total_amount:.2f}",
-                unallocated_amount=f"{unallocated:.2f}",
-                notes=accrual.notes,
-                created_at=accrual.created_at,
-                lines=[
-                    AccrualLineResponse(
-                        id=line.id,
-                        service_type_code=line.service_type_code,
-                        description=line.description,
-                        amount=f"{line.amount:.2f}",
-                    )
-                    for line in lines
-                ],
-            )
+            created = to_accrual_response(accrual, lines)
             session.commit()
             return created
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.get("/{property_id}/accruals", response_model=list[AccrualResponse])
+def list_accruals(
+    property_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> list[AccrualResponse]:
+    """Возвращает начисления доступного объекта, начиная с новых периодов."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            require_property_read_access(session, property_id, current_user.id)
+            accruals = session.scalars(
+                select(Accrual)
+                .where(Accrual.property_id == property_id)
+                .order_by(Accrual.period_start.desc(), Accrual.id.desc())
+            ).all()
+            if not accruals:
+                return []
+
+            lines_by_accrual: dict[int, list[AccrualLine]] = {
+                item.id: [] for item in accruals
+            }
+            lines = session.scalars(
+                select(AccrualLine)
+                .where(AccrualLine.accrual_id.in_(lines_by_accrual))
+                .order_by(AccrualLine.id)
+            ).all()
+            for line in lines:
+                lines_by_accrual[line.accrual_id].append(line)
+            return [
+                to_accrual_response(item, lines_by_accrual[item.id]) for item in accruals
+            ]
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.get("/{property_id}/accruals/{accrual_id}", response_model=AccrualResponse)
+def get_accrual(
+    property_id: int = Path(gt=0),
+    accrual_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> AccrualResponse:
+    """Возвращает одно начисление вместе со строками услуг."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            require_property_read_access(session, property_id, current_user.id)
+            item = session.scalar(
+                select(Accrual).where(
+                    Accrual.id == accrual_id, Accrual.property_id == property_id
+                )
+            )
+            if item is None:
+                raise HTTPException(status_code=404, detail="Начисление не найдено")
+            lines = session.scalars(
+                select(AccrualLine)
+                .where(AccrualLine.accrual_id == accrual_id)
+                .order_by(AccrualLine.id)
+            ).all()
+            return to_accrual_response(item, lines)
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
