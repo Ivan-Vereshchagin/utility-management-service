@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -88,6 +88,57 @@ def require_property_read_access(session: Session, property_id: int, user_id: in
             raise HTTPException(status_code=404, detail="Объект не найден")
 
 
+def require_property_write_access(session: Session, property_id: int, user_id: int) -> None:
+    """Проверяет право владельца или редактора изменять начисления."""
+    property_item = session.get(Property, property_id)
+    if property_item is None:
+        raise HTTPException(status_code=404, detail="Объект не найден")
+    if property_item.owner_id != user_id:
+        access = session.scalar(
+            select(PropertyAccess)
+            .where(
+                PropertyAccess.property_id == property_id,
+                PropertyAccess.user_id == user_id,
+            )
+            .with_for_update()
+        )
+        if access is None:
+            raise HTTPException(status_code=404, detail="Объект не найден")
+        if access.role != "editor":
+            raise HTTPException(status_code=403, detail="Недостаточно прав")
+
+
+def validate_service_types(session: Session, lines: list[AccrualLineCreate]) -> None:
+    """Проверяет, что все указанные виды услуг есть в справочнике."""
+    codes = {line.service_type_code for line in lines}
+    if not codes:
+        return
+    known_codes = set(
+        session.scalars(
+            select(ServiceType.code).where(ServiceType.code.in_(codes))
+        ).all()
+    )
+    unknown_codes = codes - known_codes
+    if unknown_codes:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Неизвестный вид услуги: {min(unknown_codes)}",
+        )
+
+
+def build_lines(accrual_id: int, lines: list[AccrualLineCreate]) -> list[AccrualLine]:
+    """Создаёт строки начисления из подтверждённых данных запроса."""
+    return [
+        AccrualLine(
+            accrual_id=accrual_id,
+            service_type_code=line.service_type_code,
+            description=line.description,
+            amount=Decimal(line.amount),
+        )
+        for line in lines
+    ]
+
+
 def to_accrual_response(item: Accrual, lines: list[AccrualLine]) -> AccrualResponse:
     """Собирает ответ и вычисляет часть суммы без разбивки по услугам."""
     unallocated = item.total_amount - sum(
@@ -132,36 +183,8 @@ def create_accrual(
 
     try:
         with Session(engine) as session:
-            property_item = session.get(Property, property_id)
-            if property_item is None:
-                raise HTTPException(status_code=404, detail="Объект не найден")
-            if property_item.owner_id != current_user.id:
-                access = session.scalar(
-                    select(PropertyAccess)
-                    .where(
-                        PropertyAccess.property_id == property_id,
-                        PropertyAccess.user_id == current_user.id,
-                    )
-                    .with_for_update()
-                )
-                if access is None:
-                    raise HTTPException(status_code=404, detail="Объект не найден")
-                if access.role != "editor":
-                    raise HTTPException(status_code=403, detail="Недостаточно прав")
-
-            codes = {line.service_type_code for line in payload.lines}
-            if codes:
-                known_codes = set(
-                    session.scalars(
-                        select(ServiceType.code).where(ServiceType.code.in_(codes))
-                    ).all()
-                )
-                unknown_codes = codes - known_codes
-                if unknown_codes:
-                    raise HTTPException(
-                        status_code=422,
-                        detail=f"Неизвестный вид услуги: {min(unknown_codes)}",
-                    )
+            require_property_write_access(session, property_id, current_user.id)
+            validate_service_types(session, payload.lines)
 
             accrual = Accrual(
                 property_id=property_id,
@@ -173,15 +196,7 @@ def create_accrual(
             )
             session.add(accrual)
             session.flush()
-            lines = [
-                AccrualLine(
-                    accrual_id=accrual.id,
-                    service_type_code=line.service_type_code,
-                    description=line.description,
-                    amount=Decimal(line.amount),
-                )
-                for line in payload.lines
-            ]
+            lines = build_lines(accrual.id, payload.lines)
             session.add_all(lines)
             session.flush()
             session.refresh(accrual)
@@ -189,6 +204,47 @@ def create_accrual(
             created = to_accrual_response(accrual, lines)
             session.commit()
             return created
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.put("/{property_id}/accruals/{accrual_id}", response_model=AccrualResponse)
+def update_accrual(
+    payload: AccrualCreate,
+    property_id: int = Path(gt=0),
+    accrual_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> AccrualResponse:
+    """Заменяет данные начисления и весь список его строк услуг."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            require_property_write_access(session, property_id, current_user.id)
+            item = session.scalar(
+                select(Accrual)
+                .where(Accrual.id == accrual_id, Accrual.property_id == property_id)
+                .with_for_update()
+            )
+            if item is None:
+                raise HTTPException(status_code=404, detail="Начисление не найдено")
+            validate_service_types(session, payload.lines)
+
+            item.period_start = payload.period_start
+            item.period_end = payload.period_end
+            item.total_amount = Decimal(payload.total_amount)
+            item.notes = payload.notes
+            session.execute(
+                delete(AccrualLine).where(AccrualLine.accrual_id == accrual_id)
+            )
+            lines = build_lines(accrual_id, payload.lines)
+            session.add_all(lines)
+            session.flush()
+            updated = to_accrual_response(item, lines)
+            session.commit()
+            return updated
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 
