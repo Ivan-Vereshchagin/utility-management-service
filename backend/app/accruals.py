@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -281,9 +281,16 @@ def delete_accrual(
 @router.get("/{property_id}/accruals", response_model=list[AccrualResponse])
 def list_accruals(
     property_id: int = Path(gt=0),
+    period_start: date | None = Query(default=None),
+    period_end: date | None = Query(default=None),
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> list[AccrualResponse]:
-    """Возвращает начисления доступного объекта, начиная с новых периодов."""
+    """Возвращает начисления, пересекающиеся с указанным периодом."""
+    if period_start is not None and period_end is not None and period_start > period_end:
+        raise HTTPException(
+            status_code=422,
+            detail="Начало периода фильтра не может быть позже его окончания",
+        )
     engine = get_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="База данных не настроена")
@@ -291,10 +298,13 @@ def list_accruals(
     try:
         with Session(engine) as session:
             require_property_read_access(session, property_id, current_user.id)
+            statement = select(Accrual).where(Accrual.property_id == property_id)
+            if period_start is not None:
+                statement = statement.where(Accrual.period_end >= period_start)
+            if period_end is not None:
+                statement = statement.where(Accrual.period_start <= period_end)
             accruals = session.scalars(
-                select(Accrual)
-                .where(Accrual.property_id == property_id)
-                .order_by(Accrual.period_start.desc(), Accrual.id.desc())
+                statement.order_by(Accrual.period_start.desc(), Accrual.id.desc())
             ).all()
             if not accruals:
                 return []
