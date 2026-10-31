@@ -69,6 +69,60 @@
   margin-top: 36px;
 }
 
+.accrual-create-form {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.accrual-create-form label {
+  color: var(--text-h);
+}
+
+.accrual-create-form input,
+.accrual-create-form select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.accrual-create-form h3 {
+  margin: 12px 0 0;
+  color: var(--text-h);
+}
+
+.accrual-line-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 180px) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.accrual-line-row > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accrual-line-row input,
+.accrual-line-row select {
+  min-width: 0;
+}
+
+.accrual-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .accrual-list {
   display: grid;
   gap: 16px;
@@ -113,6 +167,10 @@
 }
 
 @media (max-width: 600px) {
+  .accrual-line-row {
+    grid-template-columns: 1fr;
+  }
+
   .accrual-heading,
   .accrual-lines li {
     flex-wrap: wrap;

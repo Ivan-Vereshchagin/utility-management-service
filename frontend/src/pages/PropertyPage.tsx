@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { ApiError, apiRequest, hasAccessToken, setAccessToken } from '../api/client'
 import { roleLabels } from '../api/properties'
 import type { PropertySummary } from '../api/properties'
+import AccrualCreateForm from './AccrualCreateForm'
 import './PropertyPage.css'
 
 type Accrual = {
@@ -50,6 +51,11 @@ function PropertyPage() {
   const [accrualError, setAccrualError] = useState<string | null>(null)
   const [accrualReload, setAccrualReload] = useState(0)
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({})
+
+  const handleUnauthorized = useCallback(() => {
+    setAccessToken(null)
+    setExpired(true)
+  }, [])
 
   useEffect(() => {
     if (!authorized || !validId) return
@@ -225,6 +231,14 @@ function PropertyPage() {
           )}
           <section className="accrual-history">
             <h2>Начисления</h2>
+            {property.role !== 'reader' && (
+              <AccrualCreateForm
+                propertyId={property.id}
+                onCreated={retryAccruals}
+                onUnauthorized={handleUnauthorized}
+                onNotFound={() => setNotFound(true)}
+              />
+            )}
             {accrualError ? (
               <div role="alert">
                 <p>{accrualError}</p>
