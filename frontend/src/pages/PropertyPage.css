@@ -27,3 +27,40 @@
   font: inherit;
   cursor: pointer;
 }
+
+.property-page button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.property-edit-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.property-edit-form label {
+  color: var(--text-h);
+}
+
+.property-edit-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.property-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.property-error {
+  color: #b42318;
+}
