@@ -51,6 +51,10 @@ function PropertyPage() {
   const [accrualError, setAccrualError] = useState<string | null>(null)
   const [accrualReload, setAccrualReload] = useState(0)
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({})
+  const [filterStart, setFilterStart] = useState('')
+  const [filterEnd, setFilterEnd] = useState('')
+  const [filterError, setFilterError] = useState<string | null>(null)
+  const [appliedFilter, setAppliedFilter] = useState({ start: '', end: '' })
 
   const handleUnauthorized = useCallback(() => {
     setAccessToken(null)
@@ -88,7 +92,11 @@ function PropertyPage() {
     if (property?.id !== id || expired || notFound) return
 
     let active = true
-    apiRequest<Accrual[]>(`/properties/${id}/accruals`)
+    const params = new URLSearchParams()
+    if (appliedFilter.start) params.set('period_start', appliedFilter.start)
+    if (appliedFilter.end) params.set('period_end', appliedFilter.end)
+    const query = params.toString()
+    apiRequest<Accrual[]>(`/properties/${id}/accruals${query ? `?${query}` : ''}`)
       .then((result) => {
         if (active) setAccruals(result)
       })
@@ -117,7 +125,7 @@ function PropertyPage() {
       .catch(() => {})
 
     return () => { active = false }
-  }, [property?.id, id, expired, notFound, accrualReload])
+  }, [property?.id, id, expired, notFound, accrualReload, appliedFilter])
 
   function retry() {
     setError(null)
@@ -128,6 +136,27 @@ function PropertyPage() {
     setAccruals(null)
     setAccrualError(null)
     setAccrualReload((value) => value + 1)
+  }
+
+  function applyFilter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (filterStart && filterEnd && filterStart > filterEnd) {
+      setFilterError('Начало диапазона не может быть позже окончания')
+      return
+    }
+    setFilterError(null)
+    setAccruals(null)
+    setAccrualError(null)
+    setAppliedFilter({ start: filterStart, end: filterEnd })
+  }
+
+  function resetFilter() {
+    setFilterStart('')
+    setFilterEnd('')
+    setFilterError(null)
+    setAccruals(null)
+    setAccrualError(null)
+    setAppliedFilter({ start: '', end: '' })
   }
 
   function startEditing() {
@@ -239,6 +268,34 @@ function PropertyPage() {
                 onNotFound={() => setNotFound(true)}
               />
             )}
+            <form className="accrual-filter" onSubmit={applyFilter}>
+              <div>
+                <label htmlFor="filter-period-start">С</label>
+                <input
+                  id="filter-period-start"
+                  type="date"
+                  value={filterStart}
+                  onChange={(event) => setFilterStart(event.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="filter-period-end">По</label>
+                <input
+                  id="filter-period-end"
+                  type="date"
+                  value={filterEnd}
+                  onChange={(event) => setFilterEnd(event.target.value)}
+                />
+              </div>
+              <div className="accrual-filter-actions">
+                <button type="submit">Показать</button>
+                <button type="button" onClick={resetFilter}>Сбросить</button>
+              </div>
+              <p className="accrual-filter-hint">
+                Фильтр показывает начисления, весь период которых входит в выбранный диапазон.
+              </p>
+              {filterError && <p className="property-error" role="alert">{filterError}</p>}
+            </form>
             {accrualError ? (
               <div role="alert">
                 <p>{accrualError}</p>
@@ -247,7 +304,9 @@ function PropertyPage() {
             ) : accruals === null ? (
               <p role="status">Загружаем начисления…</p>
             ) : accruals.length === 0 ? (
-              <p>Начислений пока нет.</p>
+              <p>{appliedFilter.start || appliedFilter.end
+                ? 'Начислений за выбранный период нет.'
+                : 'Начислений пока нет.'}</p>
             ) : (
               <ul className="accrual-list">
                 {accruals.map((accrual) => (

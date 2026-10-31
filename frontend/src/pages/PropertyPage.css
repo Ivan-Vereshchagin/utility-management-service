@@ -123,6 +123,42 @@
   gap: 10px;
 }
 
+.accrual-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.accrual-filter > div:not(.accrual-filter-actions) {
+  display: grid;
+  gap: 6px;
+}
+
+.accrual-filter input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.accrual-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.accrual-filter-hint {
+  flex-basis: 100%;
+}
+
+.accrual-filter .property-error {
+  flex-basis: 100%;
+}
+
 .accrual-list {
   display: grid;
   gap: 16px;
