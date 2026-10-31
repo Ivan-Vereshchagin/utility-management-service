@@ -1,0 +1,29 @@
+.property-page {
+  width: min(100% - 40px, 760px);
+  margin: 32px auto;
+  text-align: left;
+}
+
+.property-page h1 {
+  font-size: 36px;
+  overflow-wrap: anywhere;
+}
+
+.property-page p {
+  overflow-wrap: anywhere;
+}
+
+.property-address {
+  margin-bottom: 16px;
+}
+
+.property-page button {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}

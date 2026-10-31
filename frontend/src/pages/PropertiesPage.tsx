@@ -3,22 +3,9 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { ApiError, apiRequest, hasAccessToken, setAccessToken } from '../api/client'
+import { roleLabels } from '../api/properties'
+import type { PropertySummary } from '../api/properties'
 import './PropertiesPage.css'
-
-type PropertySummary = {
-  id: number
-  owner_id: number
-  address: string
-  name: string | null
-  created_at: string
-  role: 'owner' | 'editor' | 'reader'
-}
-
-const roleLabels: Record<PropertySummary['role'], string> = {
-  owner: 'Владелец',
-  editor: 'Редактор',
-  reader: 'Читатель',
-}
 
 function PropertiesPage() {
   const navigate = useNavigate()
@@ -187,7 +174,7 @@ function PropertiesPage() {
         <ul className="properties-list">
           {properties.map((property) => (
             <li key={property.id} className="property-card">
-              <h2>{property.name || property.address}</h2>
+              <h2><Link to={`/properties/${property.id}`}>{property.name || property.address}</Link></h2>
               {property.name && <p>{property.address}</p>}
               <p className="property-role">{roleLabels[property.role]}</p>
             </li>

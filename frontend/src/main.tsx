@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { restoreSession } from './auth/session'
 import LoginPage from './pages/LoginPage.tsx'
+import PropertyPage from './pages/PropertyPage.tsx'
 import PropertiesPage from './pages/PropertiesPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
 
@@ -17,6 +18,7 @@ async function start() {
           <Route path="/" element={<App />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/properties" element={<PropertiesPage />} />
+          <Route path="/properties/:propertyId" element={<PropertyPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="*" element={<p>Страница не найдена</p>} />
         </Routes>
