@@ -64,3 +64,58 @@
 .property-error {
   color: #b42318;
 }
+
+.accrual-history {
+  margin-top: 36px;
+}
+
+.accrual-list {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.accrual-card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.accrual-heading,
+.accrual-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.accrual-heading h3 {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 20px;
+}
+
+.accrual-heading strong {
+  color: var(--text-h);
+  white-space: nowrap;
+}
+
+.accrual-lines {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accrual-lines li span:last-child {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .accrual-heading,
+  .accrual-lines li {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
