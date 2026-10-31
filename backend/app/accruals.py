@@ -285,7 +285,7 @@ def list_accruals(
     period_end: date | None = Query(default=None),
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> list[AccrualResponse]:
-    """Возвращает начисления, пересекающиеся с указанным периодом."""
+    """Возвращает начисления, целиком входящие в указанный период."""
     if period_start is not None and period_end is not None and period_start > period_end:
         raise HTTPException(
             status_code=422,
@@ -300,9 +300,9 @@ def list_accruals(
             require_property_read_access(session, property_id, current_user.id)
             statement = select(Accrual).where(Accrual.property_id == property_id)
             if period_start is not None:
-                statement = statement.where(Accrual.period_end >= period_start)
+                statement = statement.where(Accrual.period_start >= period_start)
             if period_end is not None:
-                statement = statement.where(Accrual.period_start <= period_end)
+                statement = statement.where(Accrual.period_end <= period_end)
             accruals = session.scalars(
                 statement.order_by(Accrual.period_start.desc(), Accrual.id.desc())
             ).all()
