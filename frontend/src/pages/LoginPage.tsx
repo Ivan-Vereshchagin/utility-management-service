@@ -2,20 +2,16 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router'
 
-import { ApiError, apiRequest, setAccessToken } from '../api/client'
+import { ApiError, apiRequest, hasAccessToken, setAccessToken } from '../api/client'
+import type { AccessTokenResponse } from '../auth/session'
 import './AuthForm.css'
-
-type LoginResponse = {
-  access_token: string
-  token_type: 'bearer'
-}
 
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [loggedIn, setLoggedIn] = useState(false)
+  const [loggedIn, setLoggedIn] = useState(hasAccessToken)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -25,7 +21,7 @@ function LoginPage() {
     setAccessToken(null)
 
     try {
-      const result = await apiRequest<LoginResponse>('/auth/login', {
+      const result = await apiRequest<AccessTokenResponse>('/auth/login', {
         method: 'POST',
         json: { email: email.trim(), password },
       })
