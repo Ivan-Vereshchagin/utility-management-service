@@ -40,6 +40,34 @@
   cursor: wait;
 }
 
+.property-create-form {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.property-create-form label {
+  color: var(--text-h);
+}
+
+.property-create-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.property-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .properties-list {
   display: grid;
   gap: 16px;
