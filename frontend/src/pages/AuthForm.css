@@ -26,7 +26,8 @@
   font: inherit;
 }
 
-.auth-form button {
+.auth-form button,
+.auth-session button {
   margin-top: 10px;
   padding: 10px 12px;
   border: 0;
@@ -37,7 +38,8 @@
   cursor: pointer;
 }
 
-.auth-form button:disabled {
+.auth-form button:disabled,
+.auth-session button:disabled {
   opacity: 0.6;
   cursor: wait;
 }

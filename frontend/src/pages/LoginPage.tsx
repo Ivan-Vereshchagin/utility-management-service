@@ -39,6 +39,25 @@ function LoginPage() {
     }
   }
 
+  async function handleLogout() {
+    setError(null)
+    setPending(true)
+
+    try {
+      await apiRequest<void>('/auth/logout', { method: 'POST' })
+      setAccessToken(null)
+      setLoggedIn(false)
+    } catch (cause) {
+      setError(
+        cause instanceof ApiError
+          ? cause.message
+          : 'Не удалось связаться с сервером',
+      )
+    } finally {
+      setPending(false)
+    }
+  }
+
   return (
     <main className="auth-page">
       <h1>Вход</h1>
@@ -68,7 +87,14 @@ function LoginPage() {
         </button>
       </form>
       {error && <p className="auth-error" role="alert">{error}</p>}
-      {loggedIn && <p className="auth-success" role="status">Вход выполнен</p>}
+      {loggedIn && (
+        <div className="auth-session">
+          <p className="auth-success" role="status">Вход выполнен</p>
+          <button type="button" disabled={pending} onClick={handleLogout}>
+            {pending ? 'Выходим…' : 'Выйти'}
+          </button>
+        </div>
+      )}
       <p className="auth-link"><Link to="/register">Создать аккаунт</Link></p>
     </main>
   )
