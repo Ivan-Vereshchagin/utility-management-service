@@ -2,6 +2,12 @@ type ApiOptions = Omit<RequestInit, 'body'> & {
   json?: unknown
 }
 
+let accessToken: string | null = null
+
+export function setAccessToken(token: string | null): void {
+  accessToken = token
+}
+
 export class ApiError extends Error {
   readonly status: number
   readonly detail: unknown
@@ -25,6 +31,9 @@ export async function apiRequest<T>(
   }
   if (json !== undefined && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
+  }
+  if (accessToken !== null && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
   }
 
   const response = await fetch(`/api${path}`, {
