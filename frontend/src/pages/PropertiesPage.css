@@ -1,0 +1,67 @@
+.properties-page {
+  width: min(100% - 40px, 760px);
+  margin: 0 auto;
+  text-align: left;
+}
+
+.properties-page h1 {
+  font-size: 36px;
+}
+
+.properties-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.properties-header button {
+  flex-shrink: 0;
+}
+
+.properties-error {
+  margin-bottom: 16px;
+  color: #b42318;
+}
+
+.properties-page button {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.properties-page button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.properties-list {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.property-card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.property-card h2 {
+  overflow-wrap: anywhere;
+}
+
+.property-card p {
+  overflow-wrap: anywhere;
+}
+
+.property-role {
+  margin-top: 12px;
+  font-size: 14px;
+}

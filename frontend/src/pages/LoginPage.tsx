@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 
 import { ApiError, apiRequest, hasAccessToken, setAccessToken } from '../api/client'
 import type { AccessTokenResponse } from '../auth/session'
@@ -16,7 +16,6 @@ function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    setLoggedIn(false)
     setPending(true)
     setAccessToken(null)
 
@@ -39,24 +38,7 @@ function LoginPage() {
     }
   }
 
-  async function handleLogout() {
-    setError(null)
-    setPending(true)
-
-    try {
-      await apiRequest<void>('/auth/logout', { method: 'POST' })
-      setAccessToken(null)
-      setLoggedIn(false)
-    } catch (cause) {
-      setError(
-        cause instanceof ApiError
-          ? cause.message
-          : 'Не удалось связаться с сервером',
-      )
-    } finally {
-      setPending(false)
-    }
-  }
+  if (loggedIn) return <Navigate to="/properties" replace />
 
   return (
     <main className="auth-page">
@@ -87,14 +69,6 @@ function LoginPage() {
         </button>
       </form>
       {error && <p className="auth-error" role="alert">{error}</p>}
-      {loggedIn && (
-        <div className="auth-session">
-          <p className="auth-success" role="status">Вход выполнен</p>
-          <button type="button" disabled={pending} onClick={handleLogout}>
-            {pending ? 'Выходим…' : 'Выйти'}
-          </button>
-        </div>
-      )}
       <p className="auth-link"><Link to="/register">Создать аккаунт</Link></p>
     </main>
   )
