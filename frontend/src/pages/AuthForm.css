@@ -1,23 +1,23 @@
-.login-page {
+.auth-page {
   width: min(100% - 40px, 400px);
   margin: auto;
   text-align: left;
 }
 
-.login-page h1 {
+.auth-page h1 {
   font-size: 36px;
 }
 
-.login-form {
+.auth-form {
   display: grid;
   gap: 10px;
 }
 
-.login-form label {
+.auth-form label {
   color: var(--text-h);
 }
 
-.login-form input {
+.auth-form input {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -26,7 +26,7 @@
   font: inherit;
 }
 
-.login-form button {
+.auth-form button {
   margin-top: 10px;
   padding: 10px 12px;
   border: 0;
@@ -37,20 +37,21 @@
   cursor: pointer;
 }
 
-.login-form button:disabled {
+.auth-form button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
 
-.login-error,
-.login-success {
+.auth-error,
+.auth-success,
+.auth-link {
   margin-top: 18px;
 }
 
-.login-error {
+.auth-error {
   color: #b42318;
 }
 
-.login-success {
+.auth-success {
   color: #16734b;
 }

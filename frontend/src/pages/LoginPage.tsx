@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router'
 
 import { ApiError, apiRequest, setAccessToken } from '../api/client'
-import './LoginPage.css'
+import './AuthForm.css'
 
 type LoginResponse = {
   access_token: string
@@ -43,9 +44,9 @@ function LoginPage() {
   }
 
   return (
-    <main className="login-page">
+    <main className="auth-page">
       <h1>Вход</h1>
-      <form className="login-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit}>
         <label htmlFor="login-email">Email</label>
         <input
           id="login-email"
@@ -70,8 +71,9 @@ function LoginPage() {
           {pending ? 'Входим…' : 'Войти'}
         </button>
       </form>
-      {error && <p className="login-error" role="alert">{error}</p>}
-      {loggedIn && <p className="login-success" role="status">Вход выполнен</p>}
+      {error && <p className="auth-error" role="alert">{error}</p>}
+      {loggedIn && <p className="auth-success" role="status">Вход выполнен</p>}
+      <p className="auth-link"><Link to="/register">Создать аккаунт</Link></p>
     </main>
   )
 }
