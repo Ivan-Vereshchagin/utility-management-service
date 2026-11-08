@@ -172,6 +172,39 @@
   border-radius: 8px;
 }
 
+.accrual-edit-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.accrual-edit-form label {
+  color: var(--text-h);
+}
+
+.accrual-edit-form input,
+.accrual-edit-form select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.accrual-edit-form h3 {
+  margin: 12px 0 0;
+  color: var(--text-h);
+}
+
+.accrual-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .accrual-heading,
 .accrual-lines li {
   display: flex;

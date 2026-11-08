@@ -3,25 +3,12 @@ import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { ApiError, apiRequest, hasAccessToken, setAccessToken } from '../api/client'
+import type { Accrual } from '../api/accruals'
 import { roleLabels } from '../api/properties'
 import type { PropertySummary } from '../api/properties'
 import AccrualCreateForm from './AccrualCreateForm'
+import AccrualEditForm from './AccrualEditForm'
 import './PropertyPage.css'
-
-type Accrual = {
-  id: number
-  period_start: string
-  period_end: string
-  total_amount: string
-  unallocated_amount: string
-  notes: string | null
-  lines: {
-    id: number
-    service_type_code: string
-    description: string | null
-    amount: string
-  }[]
-}
 
 type ServiceType = { code: string; name: string }
 
@@ -331,6 +318,14 @@ function PropertyPage() {
                     )}
                     {Number(accrual.unallocated_amount) > 0 && (
                       <p>Без разбивки по услугам: {rubles.format(Number(accrual.unallocated_amount))}</p>
+                    )}
+                    {property.role !== 'reader' && (
+                      <AccrualEditForm
+                        accrual={accrual}
+                        propertyId={property.id}
+                        onUpdated={retryAccruals}
+                        onUnauthorized={handleUnauthorized}
+                      />
                     )}
                   </li>
                 ))}
