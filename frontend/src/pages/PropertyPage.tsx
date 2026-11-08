@@ -266,7 +266,7 @@ function PropertyPage() {
                 />
               </div>
               <div>
-                <label htmlFor="filter-period-end">По</label>
+                <label htmlFor="filter-period-end">До</label>
                 <input
                   id="filter-period-end"
                   type="date"

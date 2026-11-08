@@ -126,17 +126,25 @@
 .accrual-filter {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: center;
   gap: 12px;
   margin: 20px 0;
 }
 
 .accrual-filter > div:not(.accrual-filter-actions) {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accrual-filter label {
+  white-space: nowrap;
 }
 
 .accrual-filter input {
+  box-sizing: border-box;
+  width: 160px;
+  max-width: calc(100vw - 100px);
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -149,6 +157,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.accrual-filter-actions button {
+  margin-top: 0;
 }
 
 .accrual-filter-hint {
