@@ -163,6 +163,18 @@
   border-radius: 8px;
 }
 
+.invitation-revoke-confirmation {
+  flex-basis: 100%;
+}
+
+.invitation-revoke-confirmation button + button {
+  margin-left: 10px;
+}
+
+.property-page .invitation-revoke {
+  background: #b42318;
+}
+
 .accrual-history {
   margin-top: 36px;
 }

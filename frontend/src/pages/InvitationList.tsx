@@ -37,6 +37,9 @@ function InvitationList({ propertyId, reload, onUnauthorized, onNotFound }: Prop
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
   const [showAll, setShowAll] = useState(false)
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
+  const [pending, setPending] = useState(false)
+  const [revokeError, setRevokeError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -64,6 +67,34 @@ function InvitationList({ propertyId, reload, onUnauthorized, onNotFound }: Prop
     setRetry((value) => value + 1)
   }
 
+  async function revokeInvitation(invitationId: number) {
+    if (pending) return
+    setRevokeError(null)
+    setPending(true)
+    try {
+      await apiRequest<void>(`/properties/${propertyId}/invitations/${invitationId}`, {
+        method: 'DELETE',
+      })
+      setConfirmingId(null)
+      retryLoad()
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 401) {
+        onUnauthorized()
+      } else if (cause instanceof ApiError && cause.status === 404) {
+        onNotFound()
+      } else if (cause instanceof ApiError && cause.status === 409) {
+        setConfirmingId(null)
+        retryLoad()
+      } else {
+        setRevokeError(
+          cause instanceof ApiError ? cause.message : 'Не удалось связаться с сервером',
+        )
+      }
+    } finally {
+      setPending(false)
+    }
+  }
+
   if (error) {
     return (
       <div role="alert">
@@ -86,6 +117,35 @@ function InvitationList({ propertyId, reload, onUnauthorized, onNotFound }: Prop
             <span>Действует до {dateFormat.format(new Date(invitation.expires_at))}</span>
             {invitation.status === 'accepted' && (
               <span>Принял: {invitation.accepted_by_email ?? 'аккаунт удалён'}</span>
+            )}
+            {invitation.status === 'active' && (
+              confirmingId === invitation.id ? (
+                <div className="invitation-revoke-confirmation">
+                  <p>Отозвать это приглашение? Код перестанет действовать.</p>
+                  {revokeError && <p className="property-error" role="alert">{revokeError}</p>}
+                  <button
+                    className="invitation-revoke"
+                    type="button"
+                    disabled={pending}
+                    onClick={() => void revokeInvitation(invitation.id)}
+                  >
+                    {pending ? 'Отзываем…' : 'Отозвать код'}
+                  </button>
+                  <button type="button" disabled={pending} onClick={() => {
+                    setConfirmingId(null)
+                    setRevokeError(null)
+                  }}>
+                    Отмена
+                  </button>
+                </div>
+              ) : (
+                <button className="invitation-revoke" type="button" disabled={pending} onClick={() => {
+                  setConfirmingId(invitation.id)
+                  setRevokeError(null)
+                }}>
+                  Отозвать
+                </button>
+              )
             )}
           </li>
         ))}
