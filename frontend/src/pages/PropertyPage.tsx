@@ -11,6 +11,7 @@ import AccrualDeleteButton from './AccrualDeleteButton'
 import AccrualEditForm from './AccrualEditForm'
 import InvitationCreateForm from './InvitationCreateForm'
 import InvitationList from './InvitationList'
+import PropertyMemberList from './PropertyMemberList'
 import './PropertyPage.css'
 
 type ServiceType = { code: string; name: string }
@@ -254,6 +255,13 @@ function PropertyPage() {
           {property.role === 'owner' && (
             <section className="property-invitations">
               <h2>Совместный доступ</h2>
+              <h3>Участники</h3>
+              <PropertyMemberList
+                propertyId={property.id}
+                onUnauthorized={handleUnauthorized}
+                onNotFound={handleNotFound}
+              />
+              <h3>Приглашения</h3>
               <InvitationCreateForm
                 propertyId={property.id}
                 onCreated={() => setInvitationReload((value) => value + 1)}
