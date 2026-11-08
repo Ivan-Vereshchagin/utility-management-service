@@ -65,6 +65,54 @@
   color: #b42318;
 }
 
+.property-invitations {
+  margin-top: 32px;
+}
+
+.invitation-create-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.invitation-create-form label {
+  color: var(--text-h);
+}
+
+.invitation-create-form select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.invitation-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.invitation-issued {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.invitation-issued code {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .accrual-history {
   margin-top: 36px;
 }

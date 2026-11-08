@@ -9,6 +9,7 @@ import type { PropertySummary } from '../api/properties'
 import AccrualCreateForm from './AccrualCreateForm'
 import AccrualDeleteButton from './AccrualDeleteButton'
 import AccrualEditForm from './AccrualEditForm'
+import InvitationCreateForm from './InvitationCreateForm'
 import './PropertyPage.css'
 
 type ServiceType = { code: string; name: string }
@@ -245,6 +246,16 @@ function PropertyPage() {
             ) : (
               <button type="button" onClick={startEditing}>Редактировать</button>
             )
+          )}
+          {property.role === 'owner' && (
+            <section className="property-invitations">
+              <h2>Совместный доступ</h2>
+              <InvitationCreateForm
+                propertyId={property.id}
+                onUnauthorized={handleUnauthorized}
+                onNotFound={() => setNotFound(true)}
+              />
+            </section>
           )}
           <section className="accrual-history">
             <h2>Начисления</h2>
