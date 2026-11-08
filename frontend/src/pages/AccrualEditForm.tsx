@@ -43,6 +43,11 @@ function AccrualEditForm({ accrual, propertyId, onUpdated, onUnauthorized }: Pro
   const [open, setOpen] = useState(false)
   const [periodStart, setPeriodStart] = useState(accrual.period_start)
   const [periodEnd, setPeriodEnd] = useState(accrual.period_end)
+  const [accountingMonth, setAccountingMonth] = useState<string | null>(
+    accrual.accounting_month === `${accrual.period_end.slice(0, 7)}-01`
+      ? null
+      : accrual.accounting_month.slice(0, 7),
+  )
   const [totalAmount, setTotalAmount] = useState(accrual.total_amount)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -107,6 +112,11 @@ function AccrualEditForm({ accrual, propertyId, onUpdated, onUnauthorized }: Pro
   function cancel() {
     setPeriodStart(accrual.period_start)
     setPeriodEnd(accrual.period_end)
+    setAccountingMonth(
+      accrual.accounting_month === `${accrual.period_end.slice(0, 7)}-01`
+        ? null
+        : accrual.accounting_month.slice(0, 7),
+    )
     setTotalAmount(accrual.total_amount)
     setLines(initialLines(accrual))
     setError(null)
@@ -150,6 +160,7 @@ function AccrualEditForm({ accrual, propertyId, onUpdated, onUnauthorized }: Pro
         json: {
           period_start: periodStart,
           period_end: periodEnd,
+          accounting_month: accountingMonth === null ? undefined : `${accountingMonth}-01`,
           total_amount: amount,
           notes: accrual.notes,
           lines: lines.map((line) => ({
@@ -202,6 +213,22 @@ function AccrualEditForm({ accrual, propertyId, onUpdated, onUnauthorized }: Pro
         onChange={(event) => setPeriodEnd(event.target.value)}
         required
       />
+      <label htmlFor={`edit-accrual-accounting-month-${accrual.id}`}>Месяц учёта</label>
+      <div className="accrual-accounting-month">
+        <input
+          id={`edit-accrual-accounting-month-${accrual.id}`}
+          type="month"
+          value={accountingMonth ?? periodEnd.slice(0, 7)}
+          onChange={(event) => setAccountingMonth(event.target.value)}
+          required
+        />
+        {accountingMonth !== null && (
+          <button type="button" onClick={() => setAccountingMonth(null)}>
+            По месяцу окончания
+          </button>
+        )}
+      </div>
+      <p>Вся сумма учитывается в выбранном месяце.</p>
       <label htmlFor={`edit-accrual-total-${accrual.id}`}>Начислено, ₽</label>
       <input
         id={`edit-accrual-total-${accrual.id}`}

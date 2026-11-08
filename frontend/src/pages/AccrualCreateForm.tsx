@@ -28,6 +28,7 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
   const [open, setOpen] = useState(false)
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
+  const [accountingMonth, setAccountingMonth] = useState<string | null>(null)
   const [totalAmount, setTotalAmount] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -93,6 +94,7 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
     setOpen(false)
     setPeriodStart('')
     setPeriodEnd('')
+    setAccountingMonth(null)
     setTotalAmount('')
     setLines([])
     setError(null)
@@ -135,6 +137,7 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
         json: {
           period_start: periodStart,
           period_end: periodEnd,
+          accounting_month: accountingMonth === null ? undefined : `${accountingMonth}-01`,
           total_amount: amount,
           lines: lines.map((line) => ({
             service_type_code: line.serviceTypeCode,
@@ -186,6 +189,22 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
         onChange={(event) => setPeriodEnd(event.target.value)}
         required
       />
+      <label htmlFor="accrual-accounting-month">Месяц учёта</label>
+      <div className="accrual-accounting-month">
+        <input
+          id="accrual-accounting-month"
+          type="month"
+          value={accountingMonth ?? periodEnd.slice(0, 7)}
+          onChange={(event) => setAccountingMonth(event.target.value)}
+          required
+        />
+        {accountingMonth !== null && (
+          <button type="button" onClick={() => setAccountingMonth(null)}>
+            По месяцу окончания
+          </button>
+        )}
+      </div>
+      <p>Вся сумма учитывается в выбранном месяце.</p>
       <label htmlFor="accrual-total-amount">Начислено, ₽</label>
       <input
         id="accrual-total-amount"

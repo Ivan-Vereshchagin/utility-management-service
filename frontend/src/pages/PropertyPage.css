@@ -202,6 +202,20 @@
   font: inherit;
 }
 
+.accrual-accounting-month {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.accrual-accounting-month input {
+  min-width: 0;
+}
+
+.property-page .accrual-accounting-month button {
+  margin-top: 0;
+}
+
 .accrual-create-form h3 {
   margin: 12px 0 0;
   color: var(--text-h);

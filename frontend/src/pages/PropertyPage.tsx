@@ -17,6 +17,11 @@ import './PropertyPage.css'
 type ServiceType = { code: string; name: string }
 
 const rubles = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' })
+const monthFormat = new Intl.DateTimeFormat('ru-RU', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
 
 function formatDate(value: string) {
   const [year, month, day] = value.split('-')
@@ -335,6 +340,9 @@ function PropertyPage() {
                       </h3>
                       <strong>{rubles.format(Number(accrual.total_amount))}</strong>
                     </div>
+                    <p>Месяц учёта: {monthFormat.format(
+                      new Date(`${accrual.accounting_month}T00:00:00Z`),
+                    )}</p>
                     {accrual.lines.length > 0 && (
                       <ul className="accrual-lines">
                         {accrual.lines.map((line) => (
