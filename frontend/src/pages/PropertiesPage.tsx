@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router'
 import { ApiError, apiRequest, hasAccessToken, setAccessToken } from '../api/client'
 import { roleLabels } from '../api/properties'
 import type { PropertySummary } from '../api/properties'
+import InvitationRedeemForm from './InvitationRedeemForm'
 import './PropertiesPage.css'
 
 function PropertiesPage() {
@@ -58,6 +59,13 @@ function PropertiesPage() {
     setAddress('')
     setName('')
     setCreateError(null)
+  }
+
+  function handleJoined(property: PropertySummary) {
+    cancelCreate()
+    setProperties((current) => current === null
+      ? [property]
+      : [...current, property].sort((left, right) => left.id - right.id))
   }
 
   async function handleLogout() {
@@ -158,6 +166,17 @@ function PropertiesPage() {
         ) : (
           <button type="button" onClick={() => setCreating(true)}>Добавить объект</button>
         )
+      )}
+      {authorized && !expired && properties !== null && !error && (
+        <div className="property-join">
+          <InvitationRedeemForm
+            onJoined={handleJoined}
+            onUnauthorized={() => {
+              setAccessToken(null)
+              setExpired(true)
+            }}
+          />
+        </div>
       )}
       {!authorized || expired ? (
         <p>Войдите в аккаунт, чтобы увидеть объекты. <Link to="/login">Войти</Link></p>

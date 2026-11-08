@@ -68,6 +68,39 @@
   gap: 10px;
 }
 
+.property-join {
+  margin-top: 8px;
+}
+
+.invitation-redeem-form {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 20px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.invitation-redeem-form label {
+  color: var(--text-h);
+}
+
+.invitation-redeem-form input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.invitation-redeem-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .properties-list {
   display: grid;
   gap: 16px;
