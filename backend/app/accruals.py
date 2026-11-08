@@ -32,6 +32,7 @@ class AccrualLineCreate(BaseModel):
 class AccrualCreate(BaseModel):
     period_start: date
     period_end: date
+    accounting_month: date | None = None
     total_amount: str = Field(pattern=MONEY_PATTERN)
     notes: str | None = Field(default=None, max_length=1000)
     lines: list[AccrualLineCreate] = Field(default_factory=list)
@@ -47,6 +48,8 @@ class AccrualCreate(BaseModel):
     def validate_totals(self) -> "AccrualCreate":
         if self.period_start > self.period_end:
             raise ValueError("Начало периода не может быть позже его окончания")
+        if self.accounting_month is not None and self.accounting_month.day != 1:
+            raise ValueError("Месяц учёта нужно указывать первым числом месяца")
         if sum(Decimal(line.amount) for line in self.lines) > Decimal(self.total_amount):
             raise ValueError("Сумма строк услуг превышает общую сумму начисления")
         return self
@@ -65,6 +68,7 @@ class AccrualResponse(BaseModel):
     created_by_id: int | None
     period_start: date
     period_end: date
+    accounting_month: date
     total_amount: str
     unallocated_amount: str
     notes: str | None
@@ -150,6 +154,7 @@ def to_accrual_response(item: Accrual, lines: list[AccrualLine]) -> AccrualRespo
         created_by_id=item.created_by_id,
         period_start=item.period_start,
         period_end=item.period_end,
+        accounting_month=item.accounting_month,
         total_amount=f"{item.total_amount:.2f}",
         unallocated_amount=f"{unallocated:.2f}",
         notes=item.notes,
@@ -191,6 +196,7 @@ def create_accrual(
                 created_by_id=current_user.id,
                 period_start=payload.period_start,
                 period_end=payload.period_end,
+                accounting_month=payload.accounting_month or payload.period_end.replace(day=1),
                 total_amount=Decimal(payload.total_amount),
                 notes=payload.notes,
             )
@@ -232,6 +238,10 @@ def update_accrual(
                 raise HTTPException(status_code=404, detail="Начисление не найдено")
             validate_service_types(session, payload.lines)
 
+            if payload.accounting_month is not None:
+                item.accounting_month = payload.accounting_month
+            elif item.accounting_month == item.period_end.replace(day=1):
+                item.accounting_month = payload.period_end.replace(day=1)
             item.period_start = payload.period_start
             item.period_end = payload.period_end
             item.total_amount = Decimal(payload.total_amount)

@@ -131,6 +131,10 @@ class Accrual(Base):
     __tablename__ = "accruals"
     __table_args__ = (
         CheckConstraint("period_start <= period_end", name="ck_accruals_period"),
+        CheckConstraint(
+            "EXTRACT(DAY FROM accounting_month) = 1",
+            name="ck_accruals_accounting_month_first_day",
+        ),
         CheckConstraint("total_amount >= 0", name="ck_accruals_total_amount"),
         Index("ix_accruals_property_period", "property_id", "period_start", "period_end"),
     )
@@ -144,6 +148,7 @@ class Accrual(Base):
     )
     period_start: Mapped[date] = mapped_column(Date, nullable=False)
     period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    accounting_month: Mapped[date] = mapped_column(Date, nullable=False)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     notes: Mapped[str | None] = mapped_column(String(1000))
     created_at: Mapped[datetime] = mapped_column(
