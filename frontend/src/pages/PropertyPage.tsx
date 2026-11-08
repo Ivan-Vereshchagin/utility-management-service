@@ -7,6 +7,7 @@ import type { Accrual } from '../api/accruals'
 import { roleLabels } from '../api/properties'
 import type { PropertySummary } from '../api/properties'
 import AccrualCreateForm from './AccrualCreateForm'
+import AccrualDeleteButton from './AccrualDeleteButton'
 import AccrualEditForm from './AccrualEditForm'
 import './PropertyPage.css'
 
@@ -320,12 +321,20 @@ function PropertyPage() {
                       <p>Без разбивки по услугам: {rubles.format(Number(accrual.unallocated_amount))}</p>
                     )}
                     {property.role !== 'reader' && (
-                      <AccrualEditForm
-                        accrual={accrual}
-                        propertyId={property.id}
-                        onUpdated={retryAccruals}
-                        onUnauthorized={handleUnauthorized}
-                      />
+                      <div className="accrual-card-actions">
+                        <AccrualEditForm
+                          accrual={accrual}
+                          propertyId={property.id}
+                          onUpdated={retryAccruals}
+                          onUnauthorized={handleUnauthorized}
+                        />
+                        <AccrualDeleteButton
+                          accrualId={accrual.id}
+                          propertyId={property.id}
+                          onDeleted={retryAccruals}
+                          onUnauthorized={handleUnauthorized}
+                        />
+                      </div>
                     )}
                   </li>
                 ))}

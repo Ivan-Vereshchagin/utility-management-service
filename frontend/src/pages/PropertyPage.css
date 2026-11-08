@@ -184,6 +184,29 @@
   border-radius: 8px;
 }
 
+.accrual-card-actions {
+  margin-top: 16px;
+}
+
+.accrual-card-actions > .accrual-delete-button {
+  margin-left: 10px;
+}
+
+.property-page .accrual-delete-button {
+  background: #b42318;
+}
+
+.accrual-delete-confirmation {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.accrual-delete-confirmation button + button {
+  margin-left: 10px;
+}
+
 .accrual-edit-form {
   display: grid;
   gap: 10px;
