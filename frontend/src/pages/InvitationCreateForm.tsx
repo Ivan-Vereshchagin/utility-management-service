@@ -16,6 +16,7 @@ type InvitationIssued = {
 
 type Props = {
   propertyId: number
+  onCreated: () => void
   onUnauthorized: () => void
   onNotFound: () => void
 }
@@ -25,7 +26,7 @@ const expirationFormat = new Intl.DateTimeFormat('ru-RU', {
   timeStyle: 'short',
 })
 
-function InvitationCreateForm({ propertyId, onUnauthorized, onNotFound }: Props) {
+function InvitationCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }: Props) {
   const [open, setOpen] = useState(false)
   const [role, setRole] = useState<InvitationRole>('reader')
   const [issued, setIssued] = useState<InvitationIssued | null>(null)
@@ -45,6 +46,7 @@ function InvitationCreateForm({ propertyId, onUnauthorized, onNotFound }: Props)
       )
       setIssued(result)
       setOpen(false)
+      onCreated()
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
         onUnauthorized()

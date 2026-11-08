@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import RegisterResponse, get_current_user
 from app.database import get_engine
-from app.models import Property, PropertyAccess, PropertyInvitation
+from app.models import Property, PropertyAccess, PropertyInvitation, User
 from app.properties import PropertyResponse, to_response
 
 
@@ -40,6 +40,7 @@ class InvitationSummary(BaseModel):
     created_at: datetime
     expires_at: datetime
     accepted_at: datetime | None
+    accepted_by_email: str | None
     revoked_at: datetime | None
     status: Literal["active", "expired", "accepted", "revoked"]
 
@@ -58,7 +59,9 @@ class InvitationRedeem(BaseModel):
         return normalized
 
 
-def to_summary(invitation: PropertyInvitation, now: datetime) -> InvitationSummary:
+def to_summary(
+    invitation: PropertyInvitation, now: datetime, accepted_by_email: str | None
+) -> InvitationSummary:
     if invitation.accepted_at is not None:
         current_status = "accepted"
     elif invitation.revoked_at is not None:
@@ -74,6 +77,7 @@ def to_summary(invitation: PropertyInvitation, now: datetime) -> InvitationSumma
         created_at=invitation.created_at,
         expires_at=invitation.expires_at,
         accepted_at=invitation.accepted_at,
+        accepted_by_email=accepted_by_email,
         revoked_at=invitation.revoked_at,
         status=current_status,
     )
@@ -153,14 +157,18 @@ def list_invitations(
             if owned_property is None:
                 raise HTTPException(status_code=404, detail="Объект не найден")
 
-            invitations = session.scalars(
-                select(PropertyInvitation)
+            invitations = session.execute(
+                select(PropertyInvitation, User.email)
+                .outerjoin(User, User.id == PropertyInvitation.accepted_by_id)
                 .where(PropertyInvitation.property_id == property_id)
                 .order_by(PropertyInvitation.created_at.desc(), PropertyInvitation.id.desc())
             ).all()
             now = datetime.now(timezone.utc)
             response.headers["Cache-Control"] = "no-store"
-            return [to_summary(invitation, now) for invitation in invitations]
+            return [
+                to_summary(invitation, now, accepted_by_email)
+                for invitation, accepted_by_email in invitations
+            ]
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
 

@@ -10,6 +10,7 @@ import AccrualCreateForm from './AccrualCreateForm'
 import AccrualDeleteButton from './AccrualDeleteButton'
 import AccrualEditForm from './AccrualEditForm'
 import InvitationCreateForm from './InvitationCreateForm'
+import InvitationList from './InvitationList'
 import './PropertyPage.css'
 
 type ServiceType = { code: string; name: string }
@@ -44,11 +45,14 @@ function PropertyPage() {
   const [filterEnd, setFilterEnd] = useState('')
   const [filterError, setFilterError] = useState<string | null>(null)
   const [appliedFilter, setAppliedFilter] = useState({ start: '', end: '' })
+  const [invitationReload, setInvitationReload] = useState(0)
 
   const handleUnauthorized = useCallback(() => {
     setAccessToken(null)
     setExpired(true)
   }, [])
+
+  const handleNotFound = useCallback(() => setNotFound(true), [])
 
   useEffect(() => {
     if (!authorized || !validId) return
@@ -252,8 +256,15 @@ function PropertyPage() {
               <h2>Совместный доступ</h2>
               <InvitationCreateForm
                 propertyId={property.id}
+                onCreated={() => setInvitationReload((value) => value + 1)}
                 onUnauthorized={handleUnauthorized}
-                onNotFound={() => setNotFound(true)}
+                onNotFound={handleNotFound}
+              />
+              <InvitationList
+                propertyId={property.id}
+                reload={invitationReload}
+                onUnauthorized={handleUnauthorized}
+                onNotFound={handleNotFound}
               />
             </section>
           )}

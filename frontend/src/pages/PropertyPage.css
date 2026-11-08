@@ -113,6 +113,23 @@
   overflow-wrap: anywhere;
 }
 
+.invitation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.invitation-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 .accrual-history {
   margin-top: 36px;
 }
