@@ -11,6 +11,8 @@ type MonthlyTotal = {
 type Props = {
   propertyId: number
   reload: number
+  monthStart: string
+  monthEnd: string
   selectedMonth: string | null
   setSelectedMonth: Dispatch<SetStateAction<string | null>>
   onUnauthorized: () => void
@@ -25,18 +27,24 @@ const monthFormat = new Intl.DateTimeFormat('ru-RU', {
 const rubles = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' })
 
 function MonthlyStatistics({
-  propertyId, reload, selectedMonth, setSelectedMonth, onUnauthorized, onNotFound,
+  propertyId, reload, monthStart, monthEnd, selectedMonth, setSelectedMonth,
+  onUnauthorized, onNotFound,
 }: Props) {
-  const [totals, setTotals] = useState<MonthlyTotal[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<{ key: string; totals: MonthlyTotal[] } | null>(null)
+  const [error, setError] = useState<{ key: string; message: string } | null>(null)
   const [retry, setRetry] = useState(0)
+  const key = `${propertyId}:${monthStart}:${monthEnd}:${reload}:${retry}`
 
   useEffect(() => {
     let active = true
-    apiRequest<MonthlyTotal[]>(`/properties/${propertyId}/statistics/monthly`)
+    const params = new URLSearchParams()
+    if (monthStart) params.set('month_start', `${monthStart}-01`)
+    if (monthEnd) params.set('month_end', `${monthEnd}-01`)
+    const query = params.toString()
+    apiRequest<MonthlyTotal[]>(`/properties/${propertyId}/statistics/monthly${query ? `?${query}` : ''}`)
       .then((result) => {
         if (active) {
-          setTotals(result)
+          setData({ key, totals: result })
           setSelectedMonth((current) => result.some((item) => item.month === current)
             ? current
             : result[result.length - 1]?.month ?? null)
@@ -49,30 +57,38 @@ function MonthlyStatistics({
         } else if (cause instanceof ApiError && cause.status === 404) {
           onNotFound()
         } else {
-          setError(cause instanceof ApiError ? cause.message : 'Не удалось связаться с сервером')
+          setError({
+            key,
+            message: cause instanceof ApiError ? cause.message : 'Не удалось связаться с сервером',
+          })
         }
       })
 
     return () => { active = false }
-  }, [propertyId, reload, retry, setSelectedMonth, onUnauthorized, onNotFound])
+  }, [propertyId, reload, monthStart, monthEnd, retry, key, setSelectedMonth, onUnauthorized, onNotFound])
 
   function retryLoad() {
-    setTotals(null)
+    setData(null)
     setError(null)
     setRetry((value) => value + 1)
   }
 
-  if (error) {
+  if (error?.key === key) {
     return (
       <div role="alert">
-        <p>{error}</p>
+        <p>{error.message}</p>
         <button type="button" onClick={retryLoad}>Повторить</button>
       </div>
     )
   }
 
+  const totals = data?.key === key ? data.totals : null
   if (totals === null) return <p role="status">Загружаем статистику…</p>
-  if (totals.length === 0) return <p>Начислений для статистики пока нет.</p>
+  if (totals.length === 0) {
+    return <p>{monthStart || monthEnd
+      ? 'Начислений за выбранные месяцы нет.'
+      : 'Начислений для статистики пока нет.'}</p>
+  }
 
   const maximum = Math.max(...totals.map((item) => Number(item.total_amount)))
 

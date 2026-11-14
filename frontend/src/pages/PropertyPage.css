@@ -180,6 +180,50 @@
   margin-top: 36px;
 }
 
+.statistics-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.statistics-filter > div:not(.statistics-filter-actions) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statistics-filter input {
+  box-sizing: border-box;
+  width: 160px;
+  max-width: calc(100vw - 100px);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+}
+
+.statistics-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.property-page .statistics-filter-actions button {
+  margin-top: 0;
+}
+
+.statistics-filter .property-error {
+  flex-basis: 100%;
+}
+
+.statistics-filter-hint {
+  flex-basis: 100%;
+}
+
 .monthly-chart {
   display: grid;
   gap: 14px;

@@ -50,6 +50,10 @@ function PropertyPage() {
   const [accrualError, setAccrualError] = useState<string | null>(null)
   const [accrualReload, setAccrualReload] = useState(0)
   const [selectedStatisticsMonth, setSelectedStatisticsMonth] = useState<string | null>(null)
+  const [statisticsStart, setStatisticsStart] = useState('')
+  const [statisticsEnd, setStatisticsEnd] = useState('')
+  const [statisticsFilterError, setStatisticsFilterError] = useState<string | null>(null)
+  const [appliedStatisticsFilter, setAppliedStatisticsFilter] = useState({ start: '', end: '' })
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({})
   const [filterStart, setFilterStart] = useState('')
   const [filterEnd, setFilterEnd] = useState('')
@@ -160,6 +164,25 @@ function PropertyPage() {
     setAccruals(null)
     setAccrualError(null)
     setAppliedFilter({ start: '', end: '' })
+  }
+
+  function applyStatisticsFilter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (statisticsStart && statisticsEnd && statisticsStart > statisticsEnd) {
+      setStatisticsFilterError('Начало диапазона не может быть позже окончания')
+      return
+    }
+    setStatisticsFilterError(null)
+    setSelectedStatisticsMonth(null)
+    setAppliedStatisticsFilter({ start: statisticsStart, end: statisticsEnd })
+  }
+
+  function resetStatisticsFilter() {
+    setStatisticsStart('')
+    setStatisticsEnd('')
+    setStatisticsFilterError(null)
+    setSelectedStatisticsMonth(null)
+    setAppliedStatisticsFilter({ start: '', end: '' })
   }
 
   function startEditing() {
@@ -287,10 +310,42 @@ function PropertyPage() {
           )}
           <section className="property-statistics">
             <h2>Начисления по месяцам</h2>
-            <p>По всем начислениям объекта.</p>
+            <p>Месяцы определяются по месяцу учёта начислений.</p>
+            <form className="statistics-filter" onSubmit={applyStatisticsFilter}>
+              <div>
+                <label htmlFor="statistics-month-start">С</label>
+                <input
+                  id="statistics-month-start"
+                  type="month"
+                  value={statisticsStart}
+                  onChange={(event) => setStatisticsStart(event.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="statistics-month-end">До</label>
+                <input
+                  id="statistics-month-end"
+                  type="month"
+                  value={statisticsEnd}
+                  onChange={(event) => setStatisticsEnd(event.target.value)}
+                />
+              </div>
+              <div className="statistics-filter-actions">
+                <button type="submit">Показать</button>
+                <button type="button" onClick={resetStatisticsFilter}>Сбросить</button>
+              </div>
+              <p className="statistics-filter-hint">
+                Показаны месяцы, в которых есть начисления по объекту.
+              </p>
+              {statisticsFilterError && (
+                <p className="property-error" role="alert">{statisticsFilterError}</p>
+              )}
+            </form>
             <MonthlyStatistics
               propertyId={property.id}
               reload={accrualReload}
+              monthStart={appliedStatisticsFilter.start}
+              monthEnd={appliedStatisticsFilter.end}
               selectedMonth={selectedStatisticsMonth}
               setSelectedMonth={setSelectedStatisticsMonth}
               onUnauthorized={handleUnauthorized}
@@ -308,6 +363,8 @@ function PropertyPage() {
             <ServiceComparison
               propertyId={property.id}
               reload={accrualReload}
+              monthStart={appliedStatisticsFilter.start}
+              monthEnd={appliedStatisticsFilter.end}
               onUnauthorized={handleUnauthorized}
               onNotFound={handleNotFound}
             />

@@ -8,6 +8,8 @@ type MonthlyTotal = { month: string; total_amount: string }
 type Props = {
   propertyId: number
   reload: number
+  monthStart: string
+  monthEnd: string
   onUnauthorized: () => void
   onNotFound: () => void
 }
@@ -19,7 +21,9 @@ const monthFormat = new Intl.DateTimeFormat('ru-RU', {
   timeZone: 'UTC',
 })
 
-function ServiceComparison({ propertyId, reload, onUnauthorized, onNotFound }: Props) {
+function ServiceComparison({
+  propertyId, reload, monthStart, monthEnd, onUnauthorized, onNotFound,
+}: Props) {
   const [services, setServices] = useState<ServiceType[] | null>(null)
   const [serviceError, setServiceError] = useState<string | null>(null)
   const [serviceRetry, setServiceRetry] = useState(0)
@@ -27,7 +31,7 @@ function ServiceComparison({ propertyId, reload, onUnauthorized, onNotFound }: P
   const [data, setData] = useState<{ key: string; totals: MonthlyTotal[] } | null>(null)
   const [chartError, setChartError] = useState<{ key: string; message: string } | null>(null)
   const [chartRetry, setChartRetry] = useState(0)
-  const key = `${propertyId}:${selectedCode}:${reload}:${chartRetry}`
+  const key = `${propertyId}:${selectedCode}:${monthStart}:${monthEnd}:${reload}:${chartRetry}`
 
   useEffect(() => {
     let active = true
@@ -51,6 +55,8 @@ function ServiceComparison({ propertyId, reload, onUnauthorized, onNotFound }: P
     if (!selectedCode) return
     let active = true
     const params = new URLSearchParams({ service_type_code: selectedCode })
+    if (monthStart) params.set('month_start', `${monthStart}-01`)
+    if (monthEnd) params.set('month_end', `${monthEnd}-01`)
     apiRequest<MonthlyTotal[]>(`/properties/${propertyId}/statistics/monthly?${params}`)
       .then((result) => {
         if (active) setData({ key, totals: result })
@@ -70,7 +76,7 @@ function ServiceComparison({ propertyId, reload, onUnauthorized, onNotFound }: P
       })
 
     return () => { active = false }
-  }, [propertyId, selectedCode, reload, chartRetry, key, onUnauthorized, onNotFound])
+  }, [propertyId, selectedCode, monthStart, monthEnd, reload, chartRetry, key, onUnauthorized, onNotFound])
 
   function retryServices() {
     setServices(null)
@@ -121,7 +127,9 @@ function ServiceComparison({ propertyId, reload, onUnauthorized, onNotFound }: P
       ) : totals === null ? (
         <p role="status">Загружаем сравнение…</p>
       ) : totals.length === 0 ? (
-        <p>Начислений пока нет.</p>
+        <p>{monthStart || monthEnd
+          ? 'Начислений за выбранные месяцы нет.'
+          : 'Начислений пока нет.'}</p>
       ) : (
         <ul className="service-comparison-chart" aria-label="Начисления выбранной услуги по месяцам">
           {totals.map((item) => {
