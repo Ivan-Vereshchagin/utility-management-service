@@ -17,6 +17,32 @@
   margin-bottom: 16px;
 }
 
+.property-sections,
+.property-section-back {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.property-sections a {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.property-sections a:hover {
+  border-color: var(--accent);
+}
+
+.property-section-title,
+.property-section-subtitle {
+  text-align: center;
+}
+
 .property-page button {
   margin-top: 12px;
   padding: 10px 12px;

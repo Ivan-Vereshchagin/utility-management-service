@@ -9,12 +9,6 @@ import type { PropertySummary } from '../api/properties'
 import AccrualCreateForm from './AccrualCreateForm'
 import AccrualDeleteButton from './AccrualDeleteButton'
 import AccrualEditForm from './AccrualEditForm'
-import InvitationCreateForm from './InvitationCreateForm'
-import InvitationList from './InvitationList'
-import MonthlyStatistics from './MonthlyStatistics'
-import PropertyMemberList from './PropertyMemberList'
-import ServiceComparison from './ServiceComparison'
-import ServiceStatistics from './ServiceStatistics'
 import './PropertyPage.css'
 
 type ServiceType = { code: string; name: string }
@@ -49,17 +43,11 @@ function PropertyPage() {
   const [accruals, setAccruals] = useState<Accrual[] | null>(null)
   const [accrualError, setAccrualError] = useState<string | null>(null)
   const [accrualReload, setAccrualReload] = useState(0)
-  const [selectedStatisticsMonth, setSelectedStatisticsMonth] = useState<string | null>(null)
-  const [statisticsStart, setStatisticsStart] = useState('')
-  const [statisticsEnd, setStatisticsEnd] = useState('')
-  const [statisticsFilterError, setStatisticsFilterError] = useState<string | null>(null)
-  const [appliedStatisticsFilter, setAppliedStatisticsFilter] = useState({ start: '', end: '' })
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({})
   const [filterStart, setFilterStart] = useState('')
   const [filterEnd, setFilterEnd] = useState('')
   const [filterError, setFilterError] = useState<string | null>(null)
   const [appliedFilter, setAppliedFilter] = useState({ start: '', end: '' })
-  const [invitationReload, setInvitationReload] = useState(0)
 
   const handleUnauthorized = useCallback(() => {
     setAccessToken(null)
@@ -166,25 +154,6 @@ function PropertyPage() {
     setAppliedFilter({ start: '', end: '' })
   }
 
-  function applyStatisticsFilter(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (statisticsStart && statisticsEnd && statisticsStart > statisticsEnd) {
-      setStatisticsFilterError('Начало диапазона не может быть позже окончания')
-      return
-    }
-    setStatisticsFilterError(null)
-    setSelectedStatisticsMonth(null)
-    setAppliedStatisticsFilter({ start: statisticsStart, end: statisticsEnd })
-  }
-
-  function resetStatisticsFilter() {
-    setStatisticsStart('')
-    setStatisticsEnd('')
-    setStatisticsFilterError(null)
-    setSelectedStatisticsMonth(null)
-    setAppliedStatisticsFilter({ start: '', end: '' })
-  }
-
   function startEditing() {
     if (property === null) return
     setAddress(property.address)
@@ -284,91 +253,12 @@ function PropertyPage() {
               <button type="button" onClick={startEditing}>Редактировать</button>
             )
           )}
-          {property.role === 'owner' && (
-            <section className="property-invitations">
-              <h2>Совместный доступ</h2>
-              <h3>Участники</h3>
-              <PropertyMemberList
-                propertyId={property.id}
-                onUnauthorized={handleUnauthorized}
-                onNotFound={handleNotFound}
-              />
-              <h3>Приглашения</h3>
-              <InvitationCreateForm
-                propertyId={property.id}
-                onCreated={() => setInvitationReload((value) => value + 1)}
-                onUnauthorized={handleUnauthorized}
-                onNotFound={handleNotFound}
-              />
-              <InvitationList
-                propertyId={property.id}
-                reload={invitationReload}
-                onUnauthorized={handleUnauthorized}
-                onNotFound={handleNotFound}
-              />
-            </section>
-          )}
-          <section className="property-statistics">
-            <h2>Начисления по месяцам</h2>
-            <p>Месяцы определяются по месяцу учёта начислений.</p>
-            <form className="statistics-filter" onSubmit={applyStatisticsFilter}>
-              <div>
-                <label htmlFor="statistics-month-start">С</label>
-                <input
-                  id="statistics-month-start"
-                  type="month"
-                  value={statisticsStart}
-                  onChange={(event) => setStatisticsStart(event.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="statistics-month-end">До</label>
-                <input
-                  id="statistics-month-end"
-                  type="month"
-                  value={statisticsEnd}
-                  onChange={(event) => setStatisticsEnd(event.target.value)}
-                />
-              </div>
-              <div className="statistics-filter-actions">
-                <button type="submit">Показать</button>
-                <button type="button" onClick={resetStatisticsFilter}>Сбросить</button>
-              </div>
-              <p className="statistics-filter-hint">
-                Показаны месяцы, в которых есть начисления по объекту.
-              </p>
-              {statisticsFilterError && (
-                <p className="property-error" role="alert">{statisticsFilterError}</p>
-              )}
-            </form>
-            <MonthlyStatistics
-              propertyId={property.id}
-              reload={accrualReload}
-              monthStart={appliedStatisticsFilter.start}
-              monthEnd={appliedStatisticsFilter.end}
-              selectedMonth={selectedStatisticsMonth}
-              setSelectedMonth={setSelectedStatisticsMonth}
-              onUnauthorized={handleUnauthorized}
-              onNotFound={handleNotFound}
-            />
-            <h2>Распределение по услугам</h2>
-            <ServiceStatistics
-              propertyId={property.id}
-              reload={accrualReload}
-              month={selectedStatisticsMonth}
-              onUnauthorized={handleUnauthorized}
-              onNotFound={handleNotFound}
-            />
-            <h2>Сравнение услуги по месяцам</h2>
-            <ServiceComparison
-              propertyId={property.id}
-              reload={accrualReload}
-              monthStart={appliedStatisticsFilter.start}
-              monthEnd={appliedStatisticsFilter.end}
-              onUnauthorized={handleUnauthorized}
-              onNotFound={handleNotFound}
-            />
-          </section>
+          <nav className="property-sections" aria-label="Разделы объекта">
+            <Link to={`/properties/${property.id}/statistics`}>Статистика</Link>
+            {property.role === 'owner' && (
+              <Link to={`/properties/${property.id}/access`}>Совместный доступ</Link>
+            )}
+          </nav>
           <section className="accrual-history">
             <h2>Начисления</h2>
             {property.role !== 'reader' && (
@@ -376,7 +266,7 @@ function PropertyPage() {
                 propertyId={property.id}
                 onCreated={retryAccruals}
                 onUnauthorized={handleUnauthorized}
-                onNotFound={() => setNotFound(true)}
+                onNotFound={handleNotFound}
               />
             )}
             <form className="accrual-filter" onSubmit={applyFilter}>
