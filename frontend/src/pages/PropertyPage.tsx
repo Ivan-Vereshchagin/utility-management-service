@@ -13,6 +13,7 @@ import InvitationCreateForm from './InvitationCreateForm'
 import InvitationList from './InvitationList'
 import MonthlyStatistics from './MonthlyStatistics'
 import PropertyMemberList from './PropertyMemberList'
+import ServiceStatistics from './ServiceStatistics'
 import './PropertyPage.css'
 
 type ServiceType = { code: string; name: string }
@@ -47,6 +48,7 @@ function PropertyPage() {
   const [accruals, setAccruals] = useState<Accrual[] | null>(null)
   const [accrualError, setAccrualError] = useState<string | null>(null)
   const [accrualReload, setAccrualReload] = useState(0)
+  const [selectedStatisticsMonth, setSelectedStatisticsMonth] = useState<string | null>(null)
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({})
   const [filterStart, setFilterStart] = useState('')
   const [filterEnd, setFilterEnd] = useState('')
@@ -288,6 +290,16 @@ function PropertyPage() {
             <MonthlyStatistics
               propertyId={property.id}
               reload={accrualReload}
+              selectedMonth={selectedStatisticsMonth}
+              setSelectedMonth={setSelectedStatisticsMonth}
+              onUnauthorized={handleUnauthorized}
+              onNotFound={handleNotFound}
+            />
+            <h2>Распределение по услугам</h2>
+            <ServiceStatistics
+              propertyId={property.id}
+              reload={accrualReload}
+              month={selectedStatisticsMonth}
               onUnauthorized={handleUnauthorized}
               onNotFound={handleNotFound}
             />

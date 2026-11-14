@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 
 import { ApiError, apiRequest } from '../api/client'
 
@@ -10,6 +11,8 @@ type MonthlyTotal = {
 type Props = {
   propertyId: number
   reload: number
+  selectedMonth: string | null
+  setSelectedMonth: Dispatch<SetStateAction<string | null>>
   onUnauthorized: () => void
   onNotFound: () => void
 }
@@ -21,7 +24,9 @@ const monthFormat = new Intl.DateTimeFormat('ru-RU', {
 })
 const rubles = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' })
 
-function MonthlyStatistics({ propertyId, reload, onUnauthorized, onNotFound }: Props) {
+function MonthlyStatistics({
+  propertyId, reload, selectedMonth, setSelectedMonth, onUnauthorized, onNotFound,
+}: Props) {
   const [totals, setTotals] = useState<MonthlyTotal[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -30,7 +35,12 @@ function MonthlyStatistics({ propertyId, reload, onUnauthorized, onNotFound }: P
     let active = true
     apiRequest<MonthlyTotal[]>(`/properties/${propertyId}/statistics/monthly`)
       .then((result) => {
-        if (active) setTotals(result)
+        if (active) {
+          setTotals(result)
+          setSelectedMonth((current) => result.some((item) => item.month === current)
+            ? current
+            : result[result.length - 1]?.month ?? null)
+        }
       })
       .catch((cause: unknown) => {
         if (!active) return
@@ -44,7 +54,7 @@ function MonthlyStatistics({ propertyId, reload, onUnauthorized, onNotFound }: P
       })
 
     return () => { active = false }
-  }, [propertyId, reload, retry, onUnauthorized, onNotFound])
+  }, [propertyId, reload, retry, setSelectedMonth, onUnauthorized, onNotFound])
 
   function retryLoad() {
     setTotals(null)
@@ -72,16 +82,23 @@ function MonthlyStatistics({ propertyId, reload, onUnauthorized, onNotFound }: P
         const amount = Number(item.total_amount)
         return (
           <li key={item.month}>
-            <span>{monthFormat.format(new Date(`${item.month}T00:00:00Z`))}</span>
-            <div className="monthly-chart-track" aria-hidden="true">
-              <div
-                className="monthly-chart-bar"
-                style={{ width: maximum > 0 && amount > 0
-                  ? `${Math.max(1, amount / maximum * 100)}%`
-                  : '0%' }}
-              />
-            </div>
-            <strong>{rubles.format(amount)}</strong>
+            <button
+              className="monthly-chart-option"
+              type="button"
+              aria-pressed={selectedMonth === item.month}
+              onClick={() => setSelectedMonth(item.month)}
+            >
+              <span>{monthFormat.format(new Date(`${item.month}T00:00:00Z`))}</span>
+              <div className="monthly-chart-track" aria-hidden="true">
+                <div
+                  className="monthly-chart-bar"
+                  style={{ width: maximum > 0 && amount > 0
+                    ? `${Math.max(1, amount / maximum * 100)}%`
+                    : '0%' }}
+                />
+              </div>
+              <strong>{rubles.format(amount)}</strong>
+            </button>
           </li>
         )
       })}

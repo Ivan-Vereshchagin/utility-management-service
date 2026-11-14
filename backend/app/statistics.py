@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -57,9 +57,12 @@ def list_monthly_totals(
 @router.get("/{property_id}/statistics/services", response_model=list[ServiceTotal])
 def list_service_totals(
     property_id: int = Path(gt=0),
+    month: date | None = Query(default=None),
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> list[ServiceTotal]:
-    """Суммирует строки услуг и остаток без разбивки для одного объекта."""
+    """Суммирует строки услуг и остаток за выбранный месяц учёта."""
+    if month is not None and month.day != 1:
+        raise HTTPException(status_code=422, detail="Месяц нужно указать первым числом")
     engine = get_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="База данных не настроена")
@@ -67,10 +70,11 @@ def list_service_totals(
     try:
         with Session(engine) as session:
             require_property_read_access(session, property_id, current_user.id)
+            filters = [Accrual.property_id == property_id]
+            if month is not None:
+                filters.append(Accrual.accounting_month == month)
             total = session.scalar(
-                select(func.sum(Accrual.total_amount)).where(
-                    Accrual.property_id == property_id
-                )
+                select(func.sum(Accrual.total_amount)).where(*filters)
             )
             if total is None:
                 return []
@@ -84,7 +88,7 @@ def list_service_totals(
                 .select_from(AccrualLine)
                 .join(Accrual, Accrual.id == AccrualLine.accrual_id)
                 .join(ServiceType, ServiceType.code == AccrualLine.service_type_code)
-                .where(Accrual.property_id == property_id)
+                .where(*filters)
                 .group_by(AccrualLine.service_type_code, ServiceType.name)
                 .order_by(ServiceType.name, AccrualLine.service_type_code)
             ).all()
