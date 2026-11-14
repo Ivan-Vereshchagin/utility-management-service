@@ -30,9 +30,10 @@ class ServiceTotal(BaseModel):
 @router.get("/{property_id}/statistics/monthly", response_model=list[MonthlyTotal])
 def list_monthly_totals(
     property_id: int = Path(gt=0),
+    service_type_code: str | None = Query(default=None, min_length=1, max_length=40),
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> list[MonthlyTotal]:
-    """Суммирует начисления объекта по выбранному месяцу учёта."""
+    """Суммирует все начисления или строки одной услуги по месяцам учёта."""
     engine = get_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="База данных не настроена")
@@ -40,12 +41,37 @@ def list_monthly_totals(
     try:
         with Session(engine) as session:
             require_property_read_access(session, property_id, current_user.id)
-            rows = session.execute(
-                select(Accrual.accounting_month, func.sum(Accrual.total_amount))
-                .where(Accrual.property_id == property_id)
-                .group_by(Accrual.accounting_month)
-                .order_by(Accrual.accounting_month)
-            ).all()
+            if service_type_code is None:
+                rows = session.execute(
+                    select(Accrual.accounting_month, func.sum(Accrual.total_amount))
+                    .where(Accrual.property_id == property_id)
+                    .group_by(Accrual.accounting_month)
+                    .order_by(Accrual.accounting_month)
+                ).all()
+            else:
+                known_service = session.scalar(
+                    select(ServiceType.code).where(ServiceType.code == service_type_code)
+                )
+                if known_service is None:
+                    raise HTTPException(status_code=422, detail="Неизвестный вид услуги")
+
+                months = session.scalars(
+                    select(Accrual.accounting_month)
+                    .where(Accrual.property_id == property_id)
+                    .distinct()
+                    .order_by(Accrual.accounting_month)
+                ).all()
+                service_rows = session.execute(
+                    select(Accrual.accounting_month, func.sum(AccrualLine.amount))
+                    .join(AccrualLine, AccrualLine.accrual_id == Accrual.id)
+                    .where(
+                        Accrual.property_id == property_id,
+                        AccrualLine.service_type_code == service_type_code,
+                    )
+                    .group_by(Accrual.accounting_month)
+                ).all()
+                amounts = dict(service_rows)
+                rows = [(month, amounts.get(month, Decimal("0.00"))) for month in months]
             return [
                 MonthlyTotal(month=month, total_amount=f"{total:.2f}")
                 for month, total in rows

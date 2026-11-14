@@ -13,6 +13,7 @@ import InvitationCreateForm from './InvitationCreateForm'
 import InvitationList from './InvitationList'
 import MonthlyStatistics from './MonthlyStatistics'
 import PropertyMemberList from './PropertyMemberList'
+import ServiceComparison from './ServiceComparison'
 import ServiceStatistics from './ServiceStatistics'
 import './PropertyPage.css'
 
@@ -300,6 +301,13 @@ function PropertyPage() {
               propertyId={property.id}
               reload={accrualReload}
               month={selectedStatisticsMonth}
+              onUnauthorized={handleUnauthorized}
+              onNotFound={handleNotFound}
+            />
+            <h2>Сравнение услуги по месяцам</h2>
+            <ServiceComparison
+              propertyId={property.id}
+              reload={accrualReload}
               onUnauthorized={handleUnauthorized}
               onNotFound={handleNotFound}
             />
