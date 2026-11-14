@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { ApiError, apiRequest } from '../api/client'
+import { formatSum } from '../utils/money'
 
 type ServiceType = { code: string; name: string }
 type MonthlyTotal = { month: string; total_amount: string }
@@ -131,25 +132,30 @@ function ServiceComparison({
           ? 'Начислений за выбранные месяцы нет.'
           : 'Начислений пока нет.'}</p>
       ) : (
-        <ul className="service-comparison-chart" aria-label="Начисления выбранной услуги по месяцам">
-          {totals.map((item) => {
-            const amount = Number(item.total_amount)
-            return (
-              <li key={item.month}>
-                <span>{monthFormat.format(new Date(`${item.month}T00:00:00Z`))}</span>
-                <div className="monthly-chart-track" aria-hidden="true">
-                  <div
-                    className="monthly-chart-bar"
-                    style={{ width: maximum > 0 && amount > 0
-                      ? `${Math.max(1, amount / maximum * 100)}%`
-                      : '0%' }}
-                  />
-                </div>
-                <strong>{rubles.format(amount)}</strong>
-              </li>
-            )
-          })}
-        </ul>
+        <>
+          <p className="statistics-total">
+            Итого по услуге: <strong>{formatSum(totals.map((item) => item.total_amount))}</strong>
+          </p>
+          <ul className="service-comparison-chart" aria-label="Начисления выбранной услуги по месяцам">
+            {totals.map((item) => {
+              const amount = Number(item.total_amount)
+              return (
+                <li key={item.month}>
+                  <span>{monthFormat.format(new Date(`${item.month}T00:00:00Z`))}</span>
+                  <div className="monthly-chart-track" aria-hidden="true">
+                    <div
+                      className="monthly-chart-bar"
+                      style={{ width: maximum > 0 && amount > 0
+                        ? `${Math.max(1, amount / maximum * 100)}%`
+                        : '0%' }}
+                    />
+                  </div>
+                  <strong>{rubles.format(amount)}</strong>
+                </li>
+              )
+            })}
+          </ul>
+        </>
       )}
     </div>
   )

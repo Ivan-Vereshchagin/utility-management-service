@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { ApiError, apiRequest } from '../api/client'
+import { formatSum } from '../utils/money'
 
 type ServiceTotal = {
   service_type_code: string | null
@@ -107,7 +108,9 @@ function ServiceStatistics({ propertyId, reload, month, onUnauthorized, onNotFou
   return (
     <div className="service-distribution">
       <p>
-        {monthFormat.format(new Date(`${month}T00:00:00Z`))}: {rubles.format(overall)}
+        {monthFormat.format(new Date(`${month}T00:00:00Z`))}: {formatSum(
+          totals.map((item) => item.total_amount),
+        )}
       </p>
       <div className="service-distribution-content">
         <div

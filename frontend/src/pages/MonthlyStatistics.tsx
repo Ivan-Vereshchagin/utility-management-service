@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 
 import { ApiError, apiRequest } from '../api/client'
+import { formatSum } from '../utils/money'
 
 type MonthlyTotal = {
   month: string
@@ -93,32 +94,37 @@ function MonthlyStatistics({
   const maximum = Math.max(...totals.map((item) => Number(item.total_amount)))
 
   return (
-    <ul className="monthly-chart" aria-label="Начисления по месяцам">
-      {totals.map((item) => {
-        const amount = Number(item.total_amount)
-        return (
-          <li key={item.month}>
-            <button
-              className="monthly-chart-option"
-              type="button"
-              aria-pressed={selectedMonth === item.month}
-              onClick={() => setSelectedMonth(item.month)}
-            >
-              <span>{monthFormat.format(new Date(`${item.month}T00:00:00Z`))}</span>
-              <div className="monthly-chart-track" aria-hidden="true">
-                <div
-                  className="monthly-chart-bar"
-                  style={{ width: maximum > 0 && amount > 0
-                    ? `${Math.max(1, amount / maximum * 100)}%`
-                    : '0%' }}
-                />
-              </div>
-              <strong>{rubles.format(amount)}</strong>
-            </button>
-          </li>
-        )
-      })}
-    </ul>
+    <>
+      <p className="statistics-total">
+        Итого за показанные месяцы: <strong>{formatSum(totals.map((item) => item.total_amount))}</strong>
+      </p>
+      <ul className="monthly-chart" aria-label="Начисления по месяцам">
+        {totals.map((item) => {
+          const amount = Number(item.total_amount)
+          return (
+            <li key={item.month}>
+              <button
+                className="monthly-chart-option"
+                type="button"
+                aria-pressed={selectedMonth === item.month}
+                onClick={() => setSelectedMonth(item.month)}
+              >
+                <span>{monthFormat.format(new Date(`${item.month}T00:00:00Z`))}</span>
+                <div className="monthly-chart-track" aria-hidden="true">
+                  <div
+                    className="monthly-chart-bar"
+                    style={{ width: maximum > 0 && amount > 0
+                      ? `${Math.max(1, amount / maximum * 100)}%`
+                      : '0%' }}
+                  />
+                </div>
+                <strong>{rubles.format(amount)}</strong>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </>
   )
 }
 

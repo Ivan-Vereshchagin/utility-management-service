@@ -224,6 +224,10 @@
   flex-basis: 100%;
 }
 
+.statistics-total strong {
+  color: var(--text-h);
+}
+
 .monthly-chart {
   display: grid;
   gap: 14px;
