@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.accruals import require_property_read_access
 from app.auth import RegisterResponse, get_current_user
 from app.database import get_engine
-from app.models import Accrual
+from app.models import Accrual, AccrualLine, ServiceType
 
 
 router = APIRouter(prefix="/properties", tags=["statistics"])
@@ -17,6 +18,12 @@ router = APIRouter(prefix="/properties", tags=["statistics"])
 
 class MonthlyTotal(BaseModel):
     month: date
+    total_amount: str
+
+
+class ServiceTotal(BaseModel):
+    service_type_code: str | None
+    name: str
     total_amount: str
 
 
@@ -43,5 +50,62 @@ def list_monthly_totals(
                 MonthlyTotal(month=month, total_amount=f"{total:.2f}")
                 for month, total in rows
             ]
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="База данных недоступна") from exc
+
+
+@router.get("/{property_id}/statistics/services", response_model=list[ServiceTotal])
+def list_service_totals(
+    property_id: int = Path(gt=0),
+    current_user: RegisterResponse = Depends(get_current_user),
+) -> list[ServiceTotal]:
+    """Суммирует строки услуг и остаток без разбивки для одного объекта."""
+    engine = get_engine()
+    if engine is None:
+        raise HTTPException(status_code=503, detail="База данных не настроена")
+
+    try:
+        with Session(engine) as session:
+            require_property_read_access(session, property_id, current_user.id)
+            total = session.scalar(
+                select(func.sum(Accrual.total_amount)).where(
+                    Accrual.property_id == property_id
+                )
+            )
+            if total is None:
+                return []
+
+            rows = session.execute(
+                select(
+                    AccrualLine.service_type_code,
+                    ServiceType.name,
+                    func.sum(AccrualLine.amount),
+                )
+                .select_from(AccrualLine)
+                .join(Accrual, Accrual.id == AccrualLine.accrual_id)
+                .join(ServiceType, ServiceType.code == AccrualLine.service_type_code)
+                .where(Accrual.property_id == property_id)
+                .group_by(AccrualLine.service_type_code, ServiceType.name)
+                .order_by(ServiceType.name, AccrualLine.service_type_code)
+            ).all()
+            allocated = sum((amount for _, _, amount in rows), Decimal("0.00"))
+            result = [
+                ServiceTotal(
+                    service_type_code=code,
+                    name=name,
+                    total_amount=f"{amount:.2f}",
+                )
+                for code, name, amount in rows
+            ]
+            unallocated = total - allocated
+            if unallocated > 0:
+                result.append(
+                    ServiceTotal(
+                        service_type_code=None,
+                        name="Без разбивки по услугам",
+                        total_amount=f"{unallocated:.2f}",
+                    )
+                )
+            return result
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="База данных недоступна") from exc
