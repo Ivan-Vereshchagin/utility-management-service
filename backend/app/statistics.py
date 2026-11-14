@@ -31,9 +31,23 @@ class ServiceTotal(BaseModel):
 def list_monthly_totals(
     property_id: int = Path(gt=0),
     service_type_code: str | None = Query(default=None, min_length=1, max_length=40),
+    month_start: date | None = Query(default=None),
+    month_end: date | None = Query(default=None),
     current_user: RegisterResponse = Depends(get_current_user),
 ) -> list[MonthlyTotal]:
     """Суммирует все начисления или строки одной услуги по месяцам учёта."""
+    if month_start is not None and month_start.day != 1:
+        raise HTTPException(
+            status_code=422, detail="Начало диапазона нужно указать первым числом месяца"
+        )
+    if month_end is not None and month_end.day != 1:
+        raise HTTPException(
+            status_code=422, detail="Конец диапазона нужно указать первым числом месяца"
+        )
+    if month_start is not None and month_end is not None and month_start > month_end:
+        raise HTTPException(
+            status_code=422, detail="Начало диапазона не может быть позже конца"
+        )
     engine = get_engine()
     if engine is None:
         raise HTTPException(status_code=503, detail="База данных не настроена")
@@ -41,10 +55,15 @@ def list_monthly_totals(
     try:
         with Session(engine) as session:
             require_property_read_access(session, property_id, current_user.id)
+            filters = [Accrual.property_id == property_id]
+            if month_start is not None:
+                filters.append(Accrual.accounting_month >= month_start)
+            if month_end is not None:
+                filters.append(Accrual.accounting_month <= month_end)
             if service_type_code is None:
                 rows = session.execute(
                     select(Accrual.accounting_month, func.sum(Accrual.total_amount))
-                    .where(Accrual.property_id == property_id)
+                    .where(*filters)
                     .group_by(Accrual.accounting_month)
                     .order_by(Accrual.accounting_month)
                 ).all()
@@ -57,7 +76,7 @@ def list_monthly_totals(
 
                 months = session.scalars(
                     select(Accrual.accounting_month)
-                    .where(Accrual.property_id == property_id)
+                    .where(*filters)
                     .distinct()
                     .order_by(Accrual.accounting_month)
                 ).all()
@@ -65,7 +84,7 @@ def list_monthly_totals(
                     select(Accrual.accounting_month, func.sum(AccrualLine.amount))
                     .join(AccrualLine, AccrualLine.accrual_id == Accrual.id)
                     .where(
-                        Accrual.property_id == property_id,
+                        *filters,
                         AccrualLine.service_type_code == service_type_code,
                     )
                     .group_by(Accrual.accounting_month)
