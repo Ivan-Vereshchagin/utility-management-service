@@ -109,3 +109,24 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+body:has(.auth-page, .properties-page, .property-page) {
+  background: #dfe9e4;
+}
+
+#root:has(.auth-page, .properties-page, .property-page) {
+  --text: #4b625d;
+  --text-h: #1c3834;
+  --bg: #f8fbf8;
+  --page-bg: #e9f0eb;
+  --surface: #f2f7f3;
+  --border: #c6d8d0;
+  --code-bg: #deebe3;
+  --accent: #176b64;
+  --accent-bg: #d2e8dc;
+  --accent-border: #94c5ae;
+
+  color-scheme: light;
+  color: var(--text);
+  background: var(--page-bg);
+}
