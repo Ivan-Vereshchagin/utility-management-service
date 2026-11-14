@@ -6,6 +6,7 @@ import { ApiError, apiRequest } from '../api/client'
 type Props = {
   propertyId: number
   onCreated: () => void
+  onClose: () => void
   onUnauthorized: () => void
   onNotFound: () => void
 }
@@ -23,9 +24,8 @@ function toKopeks(value: string): number | null {
   return Number(whole) * 100 + Number(fraction.padEnd(2, '0'))
 }
 
-function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }: Props) {
+function AccrualCreateForm({ propertyId, onCreated, onClose, onUnauthorized, onNotFound }: Props) {
   const nextLineId = useRef(0)
-  const [open, setOpen] = useState(false)
   const [periodStart, setPeriodStart] = useState('')
   const [periodEnd, setPeriodEnd] = useState('')
   const [accountingMonth, setAccountingMonth] = useState<string | null>(null)
@@ -38,8 +38,6 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
   const [serviceReload, setServiceReload] = useState(0)
 
   useEffect(() => {
-    if (!open) return
-
     let active = true
     apiRequest<ServiceType[]>('/service-types')
       .then((result) => {
@@ -59,7 +57,7 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
       })
 
     return () => { active = false }
-  }, [open, serviceReload, onUnauthorized])
+  }, [serviceReload, onUnauthorized])
 
   function addLine() {
     nextLineId.current += 1
@@ -89,17 +87,6 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
   const remainingKopeks = totalKopeks !== null && lineAmounts.every((amount) => amount !== null)
     ? totalKopeks - allocatedKopeks
     : null
-
-  function close() {
-    setOpen(false)
-    setPeriodStart('')
-    setPeriodEnd('')
-    setAccountingMonth(null)
-    setTotalAmount('')
-    setLines([])
-    setError(null)
-    setServiceError(null)
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -145,7 +132,6 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
           })),
         },
       })
-      close()
       onCreated()
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
@@ -164,15 +150,8 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
     }
   }
 
-  if (!open) {
-    return <button type="button" onClick={() => {
-      setServiceTypes(null)
-      setOpen(true)
-    }}>Добавить начисление</button>
-  }
-
   return (
-    <form className="accrual-create-form" onSubmit={handleSubmit}>
+    <form id="accrual-create-form" className="accrual-create-form" onSubmit={handleSubmit}>
       <label htmlFor="accrual-period-start">Начало периода</label>
       <input
         id="accrual-period-start"
@@ -273,7 +252,7 @@ function AccrualCreateForm({ propertyId, onCreated, onUnauthorized, onNotFound }
         <button type="submit" disabled={pending}>
           {pending ? 'Сохраняем…' : 'Сохранить'}
         </button>
-        <button type="button" disabled={pending} onClick={close}>Отмена</button>
+        <button type="button" disabled={pending} onClick={onClose}>Отмена</button>
       </div>
     </form>
   )

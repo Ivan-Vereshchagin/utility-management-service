@@ -13,8 +13,48 @@
   overflow-wrap: anywhere;
 }
 
+.property-header {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--accent-bg);
+}
+
+.property-header-top {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 120px;
+}
+
+.property-header-back {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  white-space: nowrap;
+}
+
+.property-header-details {
+  min-width: 0;
+  text-align: center;
+}
+
+.property-header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
 .property-address {
-  margin-bottom: 16px;
+  margin: 8px 0 0;
+}
+
+.property-header-role {
+  margin: 8px 0 0;
+  font-size: 14px;
 }
 
 .property-sections,
@@ -36,6 +76,14 @@
 
 .property-sections a:hover {
   border-color: var(--accent);
+}
+
+.property-header .property-sections {
+  margin: 0;
+}
+
+.property-page .property-header .property-sections button {
+  margin-top: 0;
 }
 
 .property-section-title,
@@ -450,8 +498,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   margin: 20px 0;
+}
+
+.accrual-history > h2,
+.accrual-filter-hint,
+.accrual-filter .property-error {
+  text-align: center;
 }
 
 .accrual-filter > div:not(.accrual-filter-actions) {
@@ -594,6 +649,28 @@
 }
 
 @media (max-width: 600px) {
+  .property-header {
+    padding: 18px;
+  }
+
+  .property-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .property-header-back {
+    position: static;
+    align-self: flex-start;
+  }
+
+  .property-sections a,
+  .property-header .property-sections button {
+    flex: 1 1 180px;
+    text-align: center;
+  }
+
   .property-page .monthly-chart-option {
     grid-template-columns: minmax(0, 1fr) auto;
   }

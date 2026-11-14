@@ -43,6 +43,7 @@ function PropertyPage() {
   const [accruals, setAccruals] = useState<Accrual[] | null>(null)
   const [accrualError, setAccrualError] = useState<string | null>(null)
   const [accrualReload, setAccrualReload] = useState(0)
+  const [creatingAccrual, setCreatingAccrual] = useState(false)
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({})
   const [filterStart, setFilterStart] = useState('')
   const [filterEnd, setFilterEnd] = useState('')
@@ -206,7 +207,9 @@ function PropertyPage() {
 
   return (
     <main className="property-page">
-      <p><Link to="/properties">← Мои объекты</Link></p>
+      {(!authorized || expired || !validId || notFound || error || property === null) && (
+        <p><Link to="/properties">← Все объекты</Link></p>
+      )}
       {!authorized || expired ? (
         <p>Войдите в аккаунт, чтобы увидеть объект. <Link to="/login">Войти</Link></p>
       ) : !validId || notFound ? (
@@ -220,9 +223,33 @@ function PropertyPage() {
         <p role="status">Загружаем объект…</p>
       ) : (
         <>
-          <h1>{property.name || property.address}</h1>
-          {property.name && <p className="property-address">{property.address}</p>}
-          <p>Роль: {roleLabels[property.role]}</p>
+          <header className="property-header">
+            <div className="property-header-top">
+              <Link className="property-header-back" to="/properties">← Все объекты</Link>
+              <div className="property-header-details">
+                <h1>{property.name || property.address}</h1>
+                {property.name && <p className="property-address">{property.address}</p>}
+                <p className="property-header-role">Роль: {roleLabels[property.role]}</p>
+              </div>
+            </div>
+            <nav className="property-sections" aria-label="Разделы объекта">
+              <Link to={`/properties/${property.id}/statistics`}>Статистика</Link>
+              {property.role === 'owner' && (
+                <Link to={`/properties/${property.id}/access`}>Совместный доступ</Link>
+              )}
+              {property.role === 'owner' && !editing && (
+                <button type="button" onClick={startEditing}>Редактировать</button>
+              )}
+              {property.role !== 'reader' && !creatingAccrual && (
+                <button
+                  type="button"
+                  onClick={() => setCreatingAccrual(true)}
+                >
+                  Добавить начисление
+                </button>
+              )}
+            </nav>
+          </header>
           {property.role === 'owner' && (
             editing ? (
               <form className="property-edit-form" onSubmit={handleSave}>
@@ -249,22 +276,18 @@ function PropertyPage() {
                   <button type="button" disabled={saving} onClick={cancelEditing}>Отмена</button>
                 </div>
               </form>
-            ) : (
-              <button type="button" onClick={startEditing}>Редактировать</button>
-            )
+            ) : null
           )}
-          <nav className="property-sections" aria-label="Разделы объекта">
-            <Link to={`/properties/${property.id}/statistics`}>Статистика</Link>
-            {property.role === 'owner' && (
-              <Link to={`/properties/${property.id}/access`}>Совместный доступ</Link>
-            )}
-          </nav>
           <section className="accrual-history">
             <h2>Начисления</h2>
-            {property.role !== 'reader' && (
+            {property.role !== 'reader' && creatingAccrual && (
               <AccrualCreateForm
                 propertyId={property.id}
-                onCreated={retryAccruals}
+                onCreated={() => {
+                  setCreatingAccrual(false)
+                  retryAccruals()
+                }}
+                onClose={() => setCreatingAccrual(false)}
                 onUnauthorized={handleUnauthorized}
                 onNotFound={handleNotFound}
               />
