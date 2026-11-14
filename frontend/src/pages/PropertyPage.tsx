@@ -11,6 +11,7 @@ import AccrualDeleteButton from './AccrualDeleteButton'
 import AccrualEditForm from './AccrualEditForm'
 import InvitationCreateForm from './InvitationCreateForm'
 import InvitationList from './InvitationList'
+import MonthlyStatistics from './MonthlyStatistics'
 import PropertyMemberList from './PropertyMemberList'
 import './PropertyPage.css'
 
@@ -281,6 +282,16 @@ function PropertyPage() {
               />
             </section>
           )}
+          <section className="property-statistics">
+            <h2>Начисления по месяцам</h2>
+            <p>По всем начислениям объекта.</p>
+            <MonthlyStatistics
+              propertyId={property.id}
+              reload={accrualReload}
+              onUnauthorized={handleUnauthorized}
+              onNotFound={handleNotFound}
+            />
+          </section>
           <section className="accrual-history">
             <h2>Начисления</h2>
             {property.role !== 'reader' && (

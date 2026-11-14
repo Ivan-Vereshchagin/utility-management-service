@@ -175,8 +175,40 @@
   background: #b42318;
 }
 
+.property-statistics,
 .accrual-history {
   margin-top: 36px;
+}
+
+.monthly-chart {
+  display: grid;
+  gap: 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.monthly-chart li {
+  display: grid;
+  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.monthly-chart-track {
+  height: 18px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--accent-bg);
+}
+
+.monthly-chart-bar {
+  height: 100%;
+  background: var(--accent);
+}
+
+.monthly-chart strong {
+  color: var(--text-h);
+  white-space: nowrap;
 }
 
 .accrual-create-form {
@@ -395,6 +427,15 @@
 }
 
 @media (max-width: 600px) {
+  .monthly-chart li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .monthly-chart-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
   .accrual-line-row {
     grid-template-columns: 1fr;
   }
