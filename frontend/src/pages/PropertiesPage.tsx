@@ -18,6 +18,7 @@ function PropertiesPage() {
   const [loggingOut, setLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [joining, setJoining] = useState(false)
   const [address, setAddress] = useState('')
   const [name, setName] = useState('')
   const [createPending, setCreatePending] = useState(false)
@@ -63,6 +64,7 @@ function PropertiesPage() {
 
   function handleJoined(property: PropertySummary) {
     cancelCreate()
+    setJoining(false)
     setProperties((current) => current === null
       ? [property]
       : [...current, property].sort((left, right) => left.id - right.id))
@@ -125,18 +127,38 @@ function PropertiesPage() {
 
   return (
     <main className="properties-page">
-      <div className="properties-header">
-        <h1>Мои объекты</h1>
-        {authorized && !expired && (
-          <button type="button" disabled={loggingOut || createPending} onClick={handleLogout}>
-            {loggingOut ? 'Выходим…' : 'Выйти'}
-          </button>
-        )}
-      </div>
+      {authorized && !expired && (
+        <header className="properties-header">
+          <div className="properties-header-top">
+            <h1 className="properties-count">
+              {properties !== null && !error ? `Объектов: ${properties.length}` : 'Объекты'}
+            </h1>
+            <button className="properties-logout" type="button" disabled={loggingOut || createPending} onClick={handleLogout}>
+              {loggingOut ? 'Выходим…' : 'Выйти'}
+            </button>
+          </div>
+          {properties !== null && !error && (
+            <div className="properties-header-actions">
+              <button type="button" aria-expanded={creating} aria-controls="property-create-form" disabled={creating || createPending} onClick={() => {
+                setJoining(false)
+                setCreating(true)
+              }}>
+                Добавить объект
+              </button>
+              <button type="button" aria-expanded={joining} aria-controls="invitation-redeem-form" disabled={joining || createPending} onClick={() => {
+                cancelCreate()
+                setJoining(true)
+              }}>
+                Присоединиться по коду
+              </button>
+            </div>
+          )}
+        </header>
+      )}
       {logoutError && <p className="properties-error" role="alert">{logoutError}</p>}
       {authorized && !expired && properties !== null && !error && (
-        creating ? (
-          <form className="property-create-form" onSubmit={handleCreate}>
+        creating && (
+          <form id="property-create-form" className="property-create-form" onSubmit={handleCreate}>
             <h2>Новый объект</h2>
             <label htmlFor="property-address">Адрес</label>
             <input
@@ -163,14 +185,13 @@ function PropertiesPage() {
               </button>
             </div>
           </form>
-        ) : (
-          <button type="button" onClick={() => setCreating(true)}>Добавить объект</button>
         )
       )}
-      {authorized && !expired && properties !== null && !error && (
+      {authorized && !expired && properties !== null && !error && joining && (
         <div className="property-join">
           <InvitationRedeemForm
             onJoined={handleJoined}
+            onCancel={() => setJoining(false)}
             onUnauthorized={() => {
               setAccessToken(null)
               setExpired(true)

@@ -7,10 +7,10 @@ import type { PropertySummary } from '../api/properties'
 type Props = {
   onJoined: (property: PropertySummary) => void
   onUnauthorized: () => void
+  onCancel: () => void
 }
 
-function InvitationRedeemForm({ onJoined, onUnauthorized }: Props) {
-  const [open, setOpen] = useState(false)
+function InvitationRedeemForm({ onJoined, onUnauthorized, onCancel }: Props) {
   const [code, setCode] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +33,6 @@ function InvitationRedeemForm({ onJoined, onUnauthorized }: Props) {
         json: { code: normalized },
       })
       setCode('')
-      setOpen(false)
       onJoined(property)
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) {
@@ -50,12 +49,8 @@ function InvitationRedeemForm({ onJoined, onUnauthorized }: Props) {
     }
   }
 
-  if (!open) {
-    return <button type="button" onClick={() => setOpen(true)}>Присоединиться по коду</button>
-  }
-
   return (
-    <form className="invitation-redeem-form" onSubmit={handleSubmit}>
+    <form id="invitation-redeem-form" className="invitation-redeem-form" onSubmit={handleSubmit}>
       <label htmlFor="invitation-code">Код приглашения</label>
       <input
         id="invitation-code"
@@ -73,7 +68,7 @@ function InvitationRedeemForm({ onJoined, onUnauthorized }: Props) {
         <button type="button" disabled={pending} onClick={() => {
           setCode('')
           setError(null)
-          setOpen(false)
+          onCancel()
         }}>
           Отмена
         </button>
