@@ -443,6 +443,30 @@
   margin-top: 32px;
 }
 
+.property-statistics {
+  text-align: center;
+}
+
+.property-statistics .statistics-filter,
+.property-statistics .service-distribution-content {
+  justify-content: center;
+}
+
+.property-statistics .monthly-chart,
+.property-statistics .service-comparison-chart {
+  width: min(100%, 640px);
+  margin-inline: auto;
+}
+
+.property-statistics .service-legend {
+  flex: 0 1 280px;
+  text-align: left;
+}
+
+.property-statistics .service-comparison {
+  justify-items: center;
+}
+
 .accrual-create-form {
   display: grid;
   gap: 10px;
