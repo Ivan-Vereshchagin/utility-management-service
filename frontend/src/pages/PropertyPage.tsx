@@ -340,7 +340,7 @@ function PropertyPage() {
                       </h3>
                       <strong>{rubles.format(Number(accrual.total_amount))}</strong>
                     </div>
-                    <p>Месяц учёта: {monthFormat.format(
+                    <p className="accrual-accounting-month-label">Месяц учёта: {monthFormat.format(
                       new Date(`${accrual.accounting_month}T00:00:00Z`),
                     )}</p>
                     {accrual.lines.length > 0 && (
@@ -356,7 +356,7 @@ function PropertyPage() {
                       </ul>
                     )}
                     {Number(accrual.unallocated_amount) > 0 && (
-                      <p>Без разбивки по услугам: {rubles.format(Number(accrual.unallocated_amount))}</p>
+                      <p className="accrual-unallocated">Без разбивки по услугам: {rubles.format(Number(accrual.unallocated_amount))}</p>
                     )}
                     {property.role !== 'reader' && (
                       <div className="accrual-card-actions">

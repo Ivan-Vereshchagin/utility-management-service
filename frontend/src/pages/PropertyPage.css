@@ -678,27 +678,57 @@
   gap: 16px;
 }
 
+.accrual-heading {
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
 .accrual-heading h3 {
   margin: 0;
   color: var(--text-h);
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .accrual-heading strong {
-  color: var(--text-h);
+  color: var(--accent);
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.accrual-accounting-month-label {
+  margin-top: 12px;
+  font-size: 14px;
 }
 
 .accrual-lines {
   display: grid;
-  gap: 8px;
-  margin: 16px 0;
+  margin: 14px 0 0;
   padding: 0;
   list-style: none;
+  font-size: 15px;
+}
+
+.accrual-lines li {
+  padding: 6px 0;
+}
+
+.accrual-lines li + li {
+  border-top: 1px solid var(--border);
 }
 
 .accrual-lines li span:last-child {
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.accrual-unallocated {
+  margin-top: 12px;
+  font-size: 15px;
 }
 
 @media (max-width: 600px) {
