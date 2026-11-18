@@ -59,6 +59,10 @@
   margin-top: 18px;
 }
 
+.auth-link {
+  text-align: center;
+}
+
 .auth-error {
   color: #b42318;
 }
