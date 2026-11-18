@@ -146,6 +146,12 @@
 }
 
 .property-invitations {
+  width: min(100%, 640px);
+  margin: 32px auto 0;
+  text-align: center;
+}
+
+.property-invitations h2:not(:first-child) {
   margin-top: 32px;
 }
 
@@ -166,7 +172,7 @@
 .property-member-details {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px 20px;
   overflow-wrap: anywhere;
 }
@@ -198,6 +204,8 @@
 }
 
 .invitation-create-form select {
+  width: min(100%, 360px);
+  justify-self: center;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -209,12 +217,13 @@
 .invitation-create-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 
 .invitation-issued {
   display: grid;
-  justify-items: start;
+  justify-items: center;
   gap: 10px;
   margin-top: 16px;
   padding: 20px;
@@ -240,6 +249,7 @@
 .invitation-list li {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px 20px;
   padding: 12px;
   border: 1px solid var(--border);
