@@ -207,9 +207,9 @@ function PropertyPage() {
 
   return (
     <main className="property-page">
-      {(!authorized || expired || !validId || notFound || error || property === null) && (
-        <p><Link to="/properties">← Все объекты</Link></p>
-      )}
+      <nav className="property-top-nav" aria-label="Навигация по объекту">
+        <Link to="/properties">← Все объекты</Link>
+      </nav>
       {!authorized || expired ? (
         <p>Войдите в аккаунт, чтобы увидеть объект. <Link to="/login">Войти</Link></p>
       ) : !validId || notFound ? (
@@ -225,7 +225,6 @@ function PropertyPage() {
         <>
           <header className="property-header">
             <div className="property-header-top">
-              <Link className="property-header-back" to="/properties">← Все объекты</Link>
               <div className="property-header-details">
                 <h1>{property.name || property.address}</h1>
                 {property.name && <p className="property-address">{property.address}</p>}

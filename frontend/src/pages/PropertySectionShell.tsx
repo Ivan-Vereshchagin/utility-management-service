@@ -63,7 +63,7 @@ function PropertySectionShell({ title, ownerOnly = false, children }: Props) {
 
   return (
     <main className="property-page">
-      <nav className="property-section-back" aria-label="Навигация по объекту">
+      <nav className="property-top-nav" aria-label="Навигация по объекту">
         <Link to="/properties">← Все объекты</Link>
         {validId && <Link to={`/properties/${id}`}>К объекту</Link>}
       </nav>

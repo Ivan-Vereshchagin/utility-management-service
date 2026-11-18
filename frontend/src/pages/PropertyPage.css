@@ -1,6 +1,6 @@
 .property-page {
   width: min(100% - 40px, 760px);
-  margin: 32px auto;
+  margin: 24px auto;
   text-align: left;
 }
 
@@ -17,6 +17,14 @@
   overflow-wrap: anywhere;
 }
 
+.property-top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin-bottom: 20px;
+}
+
 .property-header {
   display: grid;
   gap: 20px;
@@ -28,19 +36,10 @@
 }
 
 .property-header-top {
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 44px;
-  padding: 0 120px;
-}
-
-.property-header-back {
-  position: absolute;
-  top: 10px;
-  left: 0;
-  white-space: nowrap;
 }
 
 .property-header-details {
@@ -62,8 +61,7 @@
   font-size: 14px;
 }
 
-.property-sections,
-.property-section-back {
+.property-sections {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -712,12 +710,6 @@
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
-    padding: 0;
-  }
-
-  .property-header-back {
-    position: static;
-    align-self: flex-start;
   }
 
   .property-sections a,
