@@ -1,0 +1,19 @@
+[project]
+name = "utility-management-backend"
+version = "0.1.0"
+description = "API for managing utility charges"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "alembic>=1.16,<2.0",
+    "fastapi>=0.115,<1.0",
+    "email-validator>=2.2,<3.0",
+    "pydantic-settings>=2.6,<3.0",
+    "pwdlib[argon2]>=0.2,<1.0",
+    "pyjwt>=2.10,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "sqlalchemy>=2.0,<2.1",
+    "uvicorn>=0.30,<1.0",
+]
+
+[tool.uv]
+package = false

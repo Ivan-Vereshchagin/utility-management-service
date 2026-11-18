@@ -223,3 +223,5 @@ __marimo__/
 pyproject.toml
 uv.lock
 compose.yaml
+!backend/pyproject.toml
+!backend/uv.lock
